@@ -36,7 +36,7 @@ main.py
   
   
   if __name__ == "__main__":
-      m = r.writer.write_file(f)
+      m = r.writer.write(f)
       print(m)
 
 

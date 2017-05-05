@@ -22,5 +22,5 @@ def main(m):
 
 
 if __name__ == "__main__":
-    m = r.writer.write_file(f)
+    m = r.writer.write(f)
     print(m)

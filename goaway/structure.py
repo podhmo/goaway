@@ -1,5 +1,4 @@
 import os.path
-from functools import partial
 from collections import OrderedDict
 from prestring import LazyFormat
 from .langhelpers import (
@@ -142,25 +141,6 @@ class File(Stringable):
         self.functions[name] = function
         return function
 
-    def write(self, m=None):
-        m = m or GoModule()
-        m.stmt(str(self.package))
-        m.sep()
-
-        def import_(fullname, as_=None, im=None, file=None):
-            im(fullname, as_=as_)
-            return file.import_(fullname, as_=as_)
-
-        with m.import_group() as im:
-            m.import_ = partial(import_, im=im, file=self)
-            for ipackage in self.imported.values():
-                im(ipackage.fullname, as_=ipackage.as_)
-
-        for func in self.functions.values():
-            func.write(m)
-            m.sep()
-        return m
-
 
 class Enum(Stringable, Typeaable):
     def __init__(self, name, type, file, comment=None):
@@ -292,15 +272,6 @@ class Function(Stringable, Valueable):
         args = "" if self.args is None else self.args.typename(file)
         returns = "" if self.returns is None else " {}".format(self.returns.typename(file))
         return "func({}){}".format(args, returns)
-
-    def write(self, m=None):
-        m = m or GoModule()
-        m.append(str(self))
-        m.stmt(" {")
-        with m.scope():
-            self.body(m)
-        m.stmt("}")
-        return m
 
 
 class Args(Stringable):
