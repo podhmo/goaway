@@ -32,9 +32,6 @@ class Stringable:
     def __str__(self):
         return stringer_function(self)
 
-    def new_instance(self, cls, *args, **kwargs):
-        return cls(*args, **kwargs)
-
 
 class Typeable:
     # self.name
@@ -65,21 +62,21 @@ class Valueable:
     # self.typename
 
     def value(self, name):
-        return self.new_instance(Value, name, type=self)
+        return Value(name, type=self)
 
     __call__ = value
 
     @reify
     def ref(self):
-        return self.new_instance(Ref, self)
+        return Ref(self)
 
     @reify
     def pointer(self):
-        return self.new_instance(Pointer, self)
+        return Pointer(self)
 
     @reify
     def slice(self):
-        return self.new_instance(Slice, self)
+        return Slice(self)
 
     def withtype(self, file):
         return "{} {}".format(self.name, self.typename(file))
@@ -110,19 +107,19 @@ class Package(Stringable):
         return os.path.join(os.getenv("GOPATH"), "src", self.fullname)
 
     def import_(self, fullname, name=None):
-        return self.new_instance(ImportedPackage, fullname, name, package=self)
+        return ImportedPackage(fullname, name, package=self)
 
     def file(self, name):
         if name not in self.files:
-            file = self.new_instance(File, name, package=self)
+            file = File(name, package=self)
             self.files[name] = file
         return self.files[name]
 
     def type(self, name):
-        return self.new_instance(Type, name, package=self)
+        return Type(name, package=self)
 
     def symbol(self, name):
-        return self.new_instance(Symbol, name, package=self)
+        return Symbol(name, package=self)
 
 
 class File(Stringable):
@@ -150,26 +147,24 @@ class File(Stringable):
 
     def enum(self, name, type, comment=None):
         name = goname(name)
-        enum = self.new_instance(Enum, name, file=self, type=type, comment=comment)
+        enum = Enum(name, file=self, type=type, comment=comment)
         self.enums[name] = enum
         return enum
 
     def struct(self, name, comment=None):
         name = name
-        struct = self.new_instance(Struct, name, file=self, comment=comment)
+        struct = Struct(name, file=self, comment=comment)
         self.structs[name] = struct
         return struct
 
     def interface(self, name, comment=None):
         name = name
-        interface = self.new_instance(Interface, name, file=self, comment=comment)
+        interface = Interface(name, file=self, comment=comment)
         self.interfaces[name] = interface
         return interface
 
     def func(self, name, args=None, returns=None, body=None, comment=None, nostore=False):
-        f = self.new_instance(
-            Function, name, file=self, args=args, returns=returns, body=body, comment=comment
-        )
+        f = Function(name, file=self, args=args, returns=returns, body=body, comment=comment)
         if not nostore:
             self.functions[name] = f
         return f
@@ -177,9 +172,7 @@ class File(Stringable):
     def method(
         self, name, subject, args=None, returns=None, body=None, comment=None, nostore=False
     ):
-        method = self.new_instance(
-            Method, name, subject, args=args, returns=returns, body=body, comment=comment
-        )
+        method = Method(name, subject, args=args, returns=returns, body=body, comment=comment)
         if not nostore:
             self.functions[(subject.fullname, name)] = method
         return method
@@ -208,7 +201,7 @@ class ImportedPackage(Stringable):
         return v
 
     def symbol(self, name):
-        return self.new_instance(Symbol, name, package=self)
+        return Symbol(name, package=self)
 
 
 class Type(Stringable, Typeable, Valueable):
@@ -347,7 +340,7 @@ class Interface(Stringable, Typeable, Valueable):
             name = f.name
             embeded = True
         else:
-            f = self.new_instance(Function, name, file=self.file, args=args, returns=returns)
+            f = Function(name, file=self.file, args=args, returns=returns)
         method = (name, f, tag, comment, embeded)
         self.methods[name] = method
         return method
@@ -371,9 +364,9 @@ class Function(Stringable, Valueable):
         self.comment = comment
 
         if args is not None:
-            self.args = self.new_instance(Args, args, function=self)
+            self.args = Args(args, function=self)
         if returns is not None:
-            self.returns = self.new_instance(Returns, returns, function=self)
+            self.returns = Returns(returns, function=self)
 
     def __getattr__(self, name):
         for e in self.args or []:
