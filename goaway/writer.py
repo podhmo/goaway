@@ -45,7 +45,7 @@ class FuncWriter:
         m.append(str(f))
         m.stmt(" {")
         with m.scope():
-            f.body(m)
+            f.body(m, file)
         m.stmt("}")
         return m
 
@@ -84,7 +84,7 @@ class EnumWriter:
         @file.method(
             "String", enum, returns=r.string, comment="stringer implementation", nostore=True
         )
-        def string(m):
+        def string(m, file):
             s = enum.shortname
             with m.switch(s) as sw:
                 for name, value, _ in enum.members.values():
@@ -113,7 +113,7 @@ class EnumWriter:
             comment="parse",
             nostore=True
         )
-        def parse(m):
+        def parse(m, file):
             s = enum.shortname
             with m.switch(s) as sw:
                 for name, value, _ in enum.members.values():

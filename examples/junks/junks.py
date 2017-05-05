@@ -39,12 +39,12 @@ print(foo_file.func("hello", args=(r.int("x"), r.int("y"))).typename(foo_file))
 print(foo_file.func("hello").typename(foo_file))
 
 @foo_file.func("hello", args=(r.int("x"), r.int("y")), returns=(r.int))
-def hello_body(m):
+def hello_body(m, f):
     m.stmt("fmt.Println('hai')")
 
 
 @foo_file.func("add", args=(r.int("x"), r.int("y")), returns=(r.int))
-def add(m):
+def add(m, f):
     m.return_("{} + {}".format(add.x, add.y))
 
 m = Module()
