@@ -71,6 +71,7 @@ class Typeaable:
 
 class Valueable:
     # self.name
+    # self.typename
     @reify
     def ref(self):
         return self.new_instance(Ref, self)
@@ -153,8 +154,10 @@ class File(Stringable):
         self.enums[name] = enum
         return enum
 
-    def func(self, name, comment=None):
-        function = self.new_instance(Function, name, file=self, comment=comment)
+    def func(self, name, args=None, returns=None, body=None, comment=None):
+        function = self.new_instance(
+            Function, name, file=self, args=args, returns=returns, body=body, comment=comment
+        )
         self.functions[name] = function
         return function
 
@@ -252,10 +255,15 @@ class Function(Stringable, Valueable):
     def __init__(self, name, file, args=None, returns=None, body=None, comment=None):
         self.name = name
         self.file = file
-        self._args = args
-        self._returns = returns
-        self._body = body or (lambda m: None)
+        self._args = None
+        self._returns = None
+        self._body = body
         self.comment = comment
+
+        if args is not None:
+            self._args = self.new_instance(Args, args, function=self)
+        if returns is not None:
+            self._returns = self.new_instance(Returns, returns, function=self)
 
     def __getattr__(self, name):
         for e in self._args or []:
@@ -268,26 +276,15 @@ class Function(Stringable, Valueable):
                 return e
         raise AttributeError(name)
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, tb):
-        return None
-
-    def args(self, *args):
-        self._args = self.new_instance(Args, args, function=self)  # xxx
-        return self
-
-    def returns(self, *args):
-        self._returns = self.new_instance(Returns, args, function=self)  # xxx
-        return self
-
     def body(self, fn):
         self._body = fn  # xxx
         return self
 
     def __call__(self, *args):
-        return LazyFormat("{}({})", self.name, ", ".join([_encode(e) for e in args]))
+        if self._body is None:
+            return self.body(*args)  # dangerous!!!!!!
+        else:
+            return LazyFormat("{}({})", self.name, ", ".join([_encode(e) for e in args]))
 
     def string(self):
         args = "" if self._args is None else self._args.withtype(self.file)
@@ -302,6 +299,8 @@ class Function(Stringable, Valueable):
 
 class Args(Stringable):
     def __init__(self, args, function):
+        if not isinstance(args, (list, tuple)):
+            args = [args]
         self.args = args
         self.function = function
 
@@ -320,6 +319,8 @@ class Args(Stringable):
 
 class Returns(Stringable):
     def __init__(self, args, function):
+        if not isinstance(args, (list, tuple)):
+            args = [args]
         self.args = args
         self.function = function
 
