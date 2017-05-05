@@ -64,8 +64,11 @@ class StructWriter:
         if struct.comment is not None or struct.name[0].isupper():
             m.stmt('// {} : {}'.format(struct.name, struct.comment or ""))
         with m.type_(struct.name, "struct"):
-            for name, type, tag, comment in struct.fields.values():
-                m.append("{} {}".format(name, type.typename(file)))
+            for name, type, tag, comment, embeded in struct.fields.values():
+                if embeded:
+                    m.append(type.typename(file))
+                else:
+                    m.append("{} {}".format(name, type.typename(file)))
                 if tag is not None:
                     m.append(" {}".format(tag))
                 if comment is not None:
@@ -82,8 +85,11 @@ class InterfaceWriter:
         if interface.comment is not None or interface.name[0].isupper():
             m.stmt('// {} : {}'.format(interface.name, interface.comment or ""))
         with m.type_(interface.name, "interface"):
-            for name, f, tag, comment in interface.methods.values():
-                m.append(f.typename(file, prefix=name))
+            for name, f, tag, comment, embeded in interface.methods.values():
+                if embeded:
+                    m.append(f.typename(file))
+                else:
+                    m.append(f.typename(file, prefix=name))
                 if tag is not None:
                     m.append(" {}".format(tag))
                 if comment is not None:

@@ -9,8 +9,16 @@ with f.struct("Person") as field:
     field("Father", f.structs["Person"].pointer)
     field("Mother", f.structs["Person"].pointer)
 
-with f.interface("Greeter", comment="hai") as method:
+with f.struct("MorePerson") as field:
+    field(f.structs["Person"])
+    field("memo", r.string)
+
+with f.interface("Greeter") as method:
     method("Greet", returns=r.string)
+
+with f.interface("MoreGreeter", comment="hai") as method:
+    method(f.interfaces["Greeter"])
+    method("Greet2", returns=r.string)
 
 # todo: embeded
 print(r.writer.write(f, r.m))

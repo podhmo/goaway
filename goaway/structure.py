@@ -301,8 +301,14 @@ class Struct(Stringable, Typeable, Valueable):
             self.type.string(),
         )
 
-    def add_field(self, name, type, tag=None, comment=None):
-        field = (name, type, tag, comment)
+    def add_field(self, name, type=None, tag=None, comment=None):
+        embeded = False
+        if type is None:
+            type = name
+            name = type.name
+            embeded = True
+
+        field = (name, type, tag, comment, embeded)
         self.fields[name] = field
         return field
 
@@ -343,8 +349,14 @@ class Interface(Stringable, Typeable, Valueable):
         )
 
     def add_method(self, name, args=None, returns=None, tag=None, comment=None):
-        f = self.new_instance(Function, name, file=self.file, args=args, returns=returns)
-        method = (name, f, tag, comment)
+        embeded = False
+        if args is None and returns is None and not isinstance(name, (str, bytes)):
+            f = name
+            name = f.name
+            embeded = True
+        else:
+            f = self.new_instance(Function, name, file=self.file, args=args, returns=returns)
+        method = (name, f, tag, comment, embeded)
         self.methods[name] = method
         return method
 
