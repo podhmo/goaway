@@ -14,5 +14,5 @@ func add(x int, y int) int {
 
 func main() {
 	hello()
-	fmt.Printf("1 + 1 = %d\n", add(1, 2))
+	fmt.Printf("1 + 2 = %d\n", add(1, 2))
 }

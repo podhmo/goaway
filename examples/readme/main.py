@@ -18,7 +18,7 @@ def add(m):
 @f.func("main")
 def main(m):
     m.stmt(hello())
-    m.stmt(fmt.Printf("1 + 1 = %d\n", add(1, 2)))
+    m.stmt(fmt.Printf("1 + 2 = %d\n", add(1, 2)))
 
 
 if __name__ == "__main__":

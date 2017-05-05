@@ -32,7 +32,7 @@ main.py
   @f.func("main")
   def main(m):
       m.stmt(hello())
-      m.stmt(fmt.Printf("1 + 1 = %d\n", add(1, 2)))
+      m.stmt(fmt.Printf("1 + 2 = %d\n", add(1, 2)))
   
   
   if __name__ == "__main__":
@@ -46,7 +46,7 @@ main.py
   goimports -w main.go
   go run main.go
   hello world
-  1 + 1 = 3
+  1 + 2 = 3
   
 
 main.go
@@ -69,6 +69,6 @@ main.go
   
   func main() {
   	hello()
-  	fmt.Printf("1 + 1 = %d\n", add(1, 2))
+  	fmt.Printf("1 + 2 = %d\n", add(1, 2))
   }
 
