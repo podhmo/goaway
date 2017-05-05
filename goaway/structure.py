@@ -36,19 +36,17 @@ class Stringable:
         return cls(*args, **kwargs)
 
 
-class Typeaable:
+class Typeable:
     # self.name
     # self.package
-    def value(self, name):
-        return self.new_instance(Value, name, type=self)
-
-    __call__ = value
 
     @property
     def shortname(self):
         return self.name[0].lower()
 
     def typename(self, file, typename=None):
+        if file is None:
+            return repr(self)  # buggy output
         if self.package.virtual or file.package.fullname == self.package.fullname:
             name = self.name
         else:
@@ -65,6 +63,12 @@ class Typeaable:
 class Valueable:
     # self.name
     # self.typename
+
+    def value(self, name):
+        return self.new_instance(Value, name, type=self)
+
+    __call__ = value
+
     @reify
     def ref(self):
         return self.new_instance(Ref, self)
@@ -76,6 +80,9 @@ class Valueable:
     @reify
     def slice(self):
         return self.new_instance(Slice, self)
+
+    def map(self, value):
+        return self.new_instance(Map, self, value)
 
     def withtype(self, file):
         return "{} {}".format(self.name, self.typename(file))
@@ -207,7 +214,7 @@ class ImportedPackage(Stringable):
         return self.new_instance(Symbol, name, package=self)
 
 
-class Type(Stringable, Typeaable, Valueable):
+class Type(Stringable, Typeable, Valueable):
     def __init__(self, name, package):
         self.name = name
         self.package = package
@@ -223,7 +230,7 @@ class Symbol(Type):
         return LazyFormat("{}({})", self.string(), ", ".join([tostring(e) for e in args]))
 
 
-class Enum(Stringable, Typeaable, Valueable):
+class Enum(Stringable, Typeable, Valueable):
     def __init__(self, name, type, file, comment=None):
         self.name = name
         self.type = type
@@ -262,7 +269,7 @@ class Enum(Stringable, Typeaable, Valueable):
         return self.file.package
 
 
-class Struct(Stringable, Typeaable, Valueable):
+class Struct(Stringable, Typeable, Valueable):
     def __init__(self, name, file, comment=None):
         self.name = name
         self.file = file
@@ -303,7 +310,7 @@ class Struct(Stringable, Typeaable, Valueable):
         return self.file.package
 
 
-class Interface(Stringable, Typeaable, Valueable):
+class Interface(Stringable, Typeable, Valueable):
     def __init__(self, name, file, comment=None):
         self.name = name
         self.file = file
@@ -377,7 +384,7 @@ class Function(Stringable, Valueable):
         else:
             return LazyFormat("{}({})", self.name, ", ".join([tostring(e) for e in args]))
 
-    def string(self, prefi="func"):
+    def string(self, prefix="func"):
         args = "" if self.args is None else self.args.withtype(self.file)
         returns = "" if self.returns is None else " {}".format(self.returns.withtype(self.file))
         return "{} {}({}){}".format(prefix, self.name, args, returns)
@@ -483,10 +490,23 @@ class Ref(Stringable, Valueable):
     def deref(self):
         return self.v
 
-    depointer = deref
-
     def typename(self, file):
         return "&{}".format(self.v.typename(file))
+
+
+class Map(Stringable, Valueable):
+    def __init__(self, k, v):
+        self.k = k
+        self.v = v
+
+    def __getattr__(self, name):
+        return getattr(self.k, name)  # xxx
+
+    def string(self):
+        return self.typename(None)
+
+    def typename(self, file):
+        return "map[{}]{}".format(self.k.typename(file), self.v.typename(file))
 
 
 class Pointer(Stringable, Valueable):
@@ -499,8 +519,6 @@ class Pointer(Stringable, Valueable):
     @property
     def depointer(self):
         return self.v
-
-    depointer = depointer
 
     def typename(self, file):
         return "*{}".format(self.v.typename(file))
