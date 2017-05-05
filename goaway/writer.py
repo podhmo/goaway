@@ -45,7 +45,7 @@ class FuncWriter:
         m.append(str(f))
         m.stmt(" {")
         with m.scope():
-            f.body(m, file)
+            f.body(m)
         m.stmt("}")
         return m
 

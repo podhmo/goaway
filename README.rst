@@ -20,17 +20,17 @@ main.py
   
   
   @f.func("hello")
-  def hello(m, f):
+  def hello(m):
       m.stmt(fmt.Println("hello world"))
   
   
   @f.func("add", args=(r.int("x"), r.int("y")), returns=r.int)
-  def add(m, f):
+  def add(m):
       m.return_("{} + {}".format(add.x, add.y))
   
   
   @f.func("main")
-  def main(m, f):
+  def main(m):
       m.stmt(hello())
       m.stmt(fmt.Printf("1 + 2 = %d\n", add(1, 2)))
   

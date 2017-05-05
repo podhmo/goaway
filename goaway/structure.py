@@ -167,7 +167,7 @@ class File(Stringable):
         return method
 
 
-class Enum(Stringable, Typeaable):
+class Enum(Stringable, Typeaable, Valueable):
     def __init__(self, name, type, file, comment=None):
         self.name = name
         self.type = type
@@ -232,7 +232,7 @@ class ImportedPackage(Stringable):
         return self.new_instance(Symbol, name, package=self)
 
 
-class Type(Stringable, Typeaable):
+class Type(Stringable, Typeaable, Valueable):
     def __init__(self, name, package):
         self.name = name
         self.package = package
@@ -379,11 +379,6 @@ class Ref(Stringable, Valueable):
     def __init__(self, v):
         self.v = v
 
-    def string(self):
-        return "&{}".format(self.v.string())
-
-    verbose = string
-
     def __getattr__(self, name):
         return getattr(self.v, name)
 
@@ -400,11 +395,6 @@ class Ref(Stringable, Valueable):
 class Pointer(Stringable, Valueable):
     def __init__(self, v):
         self.v = v
-
-    def string(self):
-        return "*{}".format(self.v.string())
-
-    verbose = string
 
     def __getattr__(self, name):
         return getattr(self.v, name)
@@ -423,16 +413,12 @@ class Slice(Stringable, Valueable):
     def __init__(self, v):
         self.v = v
 
-    def string(self):
-        return "[]{}".format(self.v.string())
-
-    verbose = string
-
     def __getattr__(self, name):
         return getattr(self.v, name)
 
+    @property
+    def deslice(self):
+        return self.v
+
     def typename(self, file):
         return "[]{}".format(self.v.typename(file))
-
-    def withtype(self, file, typename=None):
-        return self.v.withtype(file=file, typename=typename or self.typename(file))
