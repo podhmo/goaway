@@ -1,4 +1,5 @@
 import os.path
+from functools import partial
 from collections import (
     OrderedDict,
     defaultdict,
@@ -161,6 +162,25 @@ class File(Stringable):
         self.functions[name] = function
         return function
 
+    def write(self, m=None):
+        m = m or GoModule()
+        m.stmt(str(self.package))
+        m.sep()
+
+        def import_(fullname, as_=None, im=None, file=None):
+            im(fullname, as_=as_)
+            return file.import_(fullname, as_=as_)
+
+        with m.import_group() as im:
+            m.import_ = partial(import_, im=im, file=self)
+            for ipackage in self.imported.values():
+                im(ipackage.fullname, as_=ipackage.as_)
+
+        for func in self.functions.values():
+            func.write(m)
+            m.sep()
+        return m
+
 
 class Enum(Stringable, Typeaable):
     def __init__(self, name, type, file, comment=None):
@@ -278,7 +298,7 @@ class Function(Stringable, Valueable):
 
     def __call__(self, *args):
         if self.body is None:
-            self.body = args[0] # dangerous!!!!!!
+            self.body = args[0]  # dangerous!!!!!!
             return self
         else:
             return LazyFormat("{}({})", self.name, ", ".join([_encode(e) for e in args]))
@@ -292,6 +312,15 @@ class Function(Stringable, Valueable):
         args = "" if self.args is None else self.args.typename(file)
         returns = "" if self.returns is None else " {}".format(self.returns.typename(file))
         return "func({}){}".format(args, returns)
+
+    def write(self, m=None):
+        m = m or GoModule()
+        m.append(str(self))
+        m.stmt(" {")
+        with m.scope():
+            self.body(m)
+        m.stmt("}")
+        return m
 
 
 class Args(Stringable):
@@ -431,35 +460,9 @@ class Writer:
     def __init__(self, module_factory=GoModule):
         self.modules = defaultdict(module_factory)  # module is prestring's module
 
-    def create_import_function(self, im, file):
-        def import_(fullname, as_=None):
-            im(fullname, as_=as_)
-            return file.import_(fullname, as_=as_)
-
-        return import_
-
-    def _write_import_part(self, file, m):
-        with m.import_group() as im:
-            m.import_ = self.create_import_function(im, file)
-            for ipackage in file.imported.values():
-                im(ipackage.fullname, as_=ipackage.as_)
-
-    def _write_function_part(self, file, m):
-        for func in file.functions.values():
-            m.append(str(func))
-            m.stmt(" {")
-            with m.scope():
-                func.body(m)
-            m.stmt("}")
-            m.sep()
-
     def write_file(self, file, m=None):
         m = m or self.modules[file.fullname]
-        m.stmt(str(file.package))
-        m.sep()
-        self._write_import_part(file, m)
-        self._write_function_part(file, m)
-        return m
+        return file.write(m)
 
 
 def get_repository(writer=None):
@@ -478,8 +481,28 @@ class Repository:
 
     def make_builtins(self):
         b = Package("*builtins*", name="*builtins*", virtual=True)
-        b.int = b.type("int")
+        b.bool = b.type("bool")
         b.string = b.type("string")
+        b.int = b.type("int")
+        b.int8 = b.type("int8")
+        b.int16 = b.type("int16")
+        b.int32 = b.type("int32")
+        b.int64 = b.type("int64")
+        b.uint = b.type("uint")
+        b.uint8 = b.type("uint8")
+        b.uint16 = b.type("uint16")
+        b.uint32 = b.type("uint32")
+        b.uint64 = b.type("uint64")
+        b.uintptr = b.type("uintptr")
+        b.byte = b.type("byte")
+        b.rune = b.type("rune")
+        b.float32 = b.type("float32")
+        b.float64 = b.type("float64")
+        b.complex64 = b.type("complex64")
+        b.complex128 = b.type("complex128")
+        b.string = b.type("string")
+        b.int = b.type("int")
+        b.string = b.type("float")
         return b
 
     def package(self, fullname, name=None):
