@@ -3,7 +3,7 @@ from collections import (
     defaultdict,
 )
 from prestring.go import GoModule
-from goaway.structure import Package
+from goaway.structure import Package, Map, Channel
 
 
 class Repository:
@@ -42,6 +42,8 @@ class Repository:
         b.complex128 = b.type("complex128")
         b.string = b.type("string")
         b.int = b.type("int")
+        b.map = Map
+        b.chan = b.channel = Channel
         return b
 
     def package(self, fullname, name=None):

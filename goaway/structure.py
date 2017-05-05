@@ -81,14 +81,6 @@ class Valueable:
     def slice(self):
         return self.new_instance(Slice, self)
 
-    def map(self, value):
-        return self.new_instance(Map, self, value)
-
-    def chan(self, input=False, output=False):
-        return self.new_instance(Channel, self, input=input, output=output)
-
-    channel = chan
-
     def withtype(self, file):
         return "{} {}".format(self.name, self.typename(file))
 
