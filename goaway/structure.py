@@ -1,9 +1,11 @@
 import os.path
 from collections import OrderedDict
 from prestring import LazyFormat
+from prestring.go import goname
 from .langhelpers import (
     reify,
     nameof,
+    tostring,
 )
 
 
@@ -37,6 +39,12 @@ class Typeaable:
     def value(self, name):
         return self.new_instance(Value, name, type=self)
 
+    __call__ = value
+
+    @property
+    def shortname(self):
+        return self.name[0].lower()
+
     def typename(self, file, typename=None):
         if self.package.virtual or file.package.fullname == self.package.fullname:
             name = self.name
@@ -46,7 +54,9 @@ class Typeaable:
             name = typename.replace(self.name, name)
         return name
 
-    __call__ = value
+    @property
+    def fullname(self):
+        return "{}.{}".format(self.package.fullname, self.name)
 
 
 class Valueable:
@@ -134,12 +144,23 @@ class File(Stringable):
         self.enums[name] = enum
         return enum
 
-    def func(self, name, args=None, returns=None, body=None, comment=None):
+    def func(self, name, args=None, returns=None, body=None, comment=None, nostore=False):
         function = self.new_instance(
             Function, name, file=self, args=args, returns=returns, body=body, comment=comment
         )
-        self.functions[name] = function
+        if not nostore:
+            self.functions[name] = function
         return function
+
+    def method(
+        self, name, subject, args=None, returns=None, body=None, comment=None, nostore=False
+    ):
+        method = self.new_instance(
+            Method, name, subject, args=args, returns=returns, body=body, comment=comment
+        )
+        if not nostore:
+            self.functions[(subject.fullname, name)] = method
+        return method
 
 
 class Enum(Stringable, Typeaable):
@@ -171,6 +192,9 @@ class Enum(Stringable, Typeaable):
         member = (name, value, comment)
         self.members[name] = member
         return member
+
+    def varname(self, name):
+        return goname("{}{}".format(self.name, name))
 
     # typeable
     @property
@@ -214,21 +238,10 @@ class Type(Stringable, Typeaable):
             return self.name
         return "{}.{}".format(self.package.name, self.name)
 
-    @property
-    def fullname(self):
-        return "{}.{}".format(self.package.fullname, self.name)
-
 
 class Symbol(Type):
     def __call__(self, *args):
-        return LazyFormat("{}({})", self.string(), ", ".join([_encode(e) for e in args]))
-
-
-def _encode(v):
-    if isinstance(v, (str, bytes)):
-        return '"{}"'.format(repr(v)[1:-1])
-    else:
-        return str(v)
+        return LazyFormat("{}({})", self.string(), ", ".join([tostring(e) for e in args]))
 
 
 class Function(Stringable, Valueable):
@@ -261,7 +274,7 @@ class Function(Stringable, Valueable):
             self.body = args[0]  # dangerous!!!!!!
             return self
         else:
-            return LazyFormat("{}({})", self.name, ", ".join([_encode(e) for e in args]))
+            return LazyFormat("{}({})", self.name, ", ".join([tostring(e) for e in args]))
 
     def string(self):
         args = "" if self.args is None else self.args.withtype(self.file)
@@ -272,6 +285,20 @@ class Function(Stringable, Valueable):
         args = "" if self.args is None else self.args.typename(file)
         returns = "" if self.returns is None else " {}".format(self.returns.typename(file))
         return "func({}){}".format(args, returns)
+
+
+class Method(Function):
+    def __init__(self, name, subject, args=None, returns=None, body=None, comment=None):
+        self.subject = subject
+        super().__init__(name, subject.file, args=args, returns=returns, body=body, comment=comment)
+
+    def string(self):
+        file = self.file  # xxx:
+        args = "" if self.args is None else self.args.withtype(file)
+        returns = "" if self.returns is None else " {}".format(self.returns.withtype(file))
+        return "func ({} {}) {}({}){}".format(
+            self.subject.shortname, self.subject.typename(file), self.name, args, returns
+        )
 
 
 class Args(Stringable):

@@ -2,14 +2,19 @@ from collections import (
     OrderedDict,
     defaultdict,
 )
+from prestring.go import GoModule
 from goaway.structure import Package
 
 
 class Repository:
-    def __init__(self, writer):
-        self.writer = writer
+    def __init__(self, writer_cls):
+        self.writer = writer_cls(self)
         self.builtins = self.make_builtins()
         self.packages = OrderedDict()
+
+    @property
+    def m(self):
+        return GoModule()
 
     def __getattr__(self, name):
         return getattr(self.builtins, name)
@@ -37,7 +42,6 @@ class Repository:
         b.complex128 = b.type("complex128")
         b.string = b.type("string")
         b.int = b.type("int")
-        b.string = b.type("float")
         return b
 
     def package(self, fullname, name=None):
