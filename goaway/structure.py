@@ -84,6 +84,11 @@ class Valueable:
     def map(self, value):
         return self.new_instance(Map, self, value)
 
+    def chan(self, input=False, output=False):
+        return self.new_instance(Channel, self, input=input, output=output)
+
+    channel = chan
+
     def withtype(self, file):
         return "{} {}".format(self.name, self.typename(file))
 
@@ -507,6 +512,23 @@ class Map(Stringable, Valueable):
 
     def typename(self, file):
         return "map[{}]{}".format(self.k.typename(file), self.v.typename(file))
+
+
+class Channel(Stringable, Valueable):
+    def __init__(self, v, input=False, output=False):
+        self.v = v
+        self.input = input
+        self.output = output
+
+    def __getattr__(self, name):
+        return getattr(self.v, name)  # xxx
+
+    def string(self):
+        return self.typename(None)
+
+    def typename(self, file):
+        prefix = "{}chan{}".format("<-" if self.input else "", "<-" if self.output else "")
+        return "{} {}".format(prefix, self.v.typename(file))
 
 
 class Pointer(Stringable, Valueable):
