@@ -8,16 +8,11 @@ from prestring.go import (
 from .langhelpers import tostring
 
 
-class Writer:
-    def __init__(self, repository, module_factory=GoModule):
-        self.repository = repository
-        self.modules = defaultdict(module_factory)  # module is prestring's module
+class FileWriter:
+    def __init__(self, writer):
+        self.writer = writer
 
-    def write(self, file, m=None):
-        m = m or self.modules[file.fullname]
-        return self.write_file(file, m=m)
-
-    def write_file(self, file, m):
+    def write(self, file, m):
         m.stmt(str(file.package))
         m.sep()
 
@@ -31,15 +26,20 @@ class Writer:
                 im(ipackage.fullname, as_=ipackage.as_)
 
         for f in file.functions.values():
-            self.write_function(f, file, m=m)
+            self.writer.write_function(f, file, m=m)
             m.sep()
         for enum in file.enums.values():
-            self.write_enum(enum, file, m=m)
+            self.writer.write_enum(enum, file, m=m)
             m.sep()
         im.clear_ifempty()
         return m
 
-    def write_function(self, f, file, m):
+
+class FuncWriter:
+    def __init__(self, writer):
+        self.writer = writer
+
+    def write(self, f, file, m):
         if f.comment is not None or f.name[0].isupper():
             m.stmt('// {} : {}'.format(f.name, f.comment or ""))
         m.append(str(f))
@@ -49,18 +49,37 @@ class Writer:
         m.stmt("}")
         return m
 
-    def write_enum(self, enum, file, m):
-        fmt = m.import_("fmt")
+
+class EnumWriter:
+    def __init__(self, writer):
+        self.writer = writer
+
+    @property
+    def repository(self):
+        return self.writer.repository
+
+    def write(self, enum, file, m):
+        self.write_definition(enum, file, m)
+        self.write_string_method(enum, file, m)
+        self.write_parse_method(enum, file, m)
+        return m
+
+    def write_definition(self, enum, file, m):
         m.stmt('// {} : {}'.format(enum.name, enum.comment or ""))
         m.stmt("type {} {}".format(enum.name, enum.type.typename(file)))
         m.sep()
+
         with m.const_group() as cm:
             for name, value, comment in enum.members.values():
                 name = enum.varname(name)
                 cm('// {} : {}'.format(name, comment or ""))
                 cm('{} = {}({})'.format(name, enum.name, tostring(value)))
 
+        return m
+
+    def write_string_method(self, enum, file, m):
         r = self.repository
+        fmt = m.import_("fmt")
 
         @file.method(
             "String", enum, returns=r.string, comment="stringer implementation", nostore=True
@@ -80,6 +99,12 @@ class Writer:
                         )
                     )
             return m
+
+        self.writer.write_function(string, file, m)
+
+    def write_parse_method(self, enum, file, m):
+        r = self.repository
+        fmt = m.import_("fmt")
 
         @file.func(
             goname("Parse" + titlize(enum.name)),
@@ -104,9 +129,33 @@ class Writer:
                     )
             return m
 
-        self.write_function(string, file, m)
-        self.write_function(parse, file, m)
-        return m
+        self.writer.write_function(parse, file, m)
+
+
+class Writer:
+    enum_writer_factory = EnumWriter
+    func_writer_factory = FuncWriter
+    file_writer_factory = FileWriter
+
+    def __init__(self, repository, module_factory=GoModule):
+        self.repository = repository
+        self.modules = defaultdict(module_factory)  # module is prestring's module
+        self.file_writer = self.file_writer_factory(self)
+        self.enum_writer = self.enum_writer_factory(self)
+        self.func_writer = self.func_writer_factory(self)
+
+    def write(self, file, m=None):
+        m = m or self.modules[file.fullname]
+        return self.write_file(file, m=m)
+
+    def write_file(self, file, m):
+        return self.file_writer.write(file, m)
+
+    def write_function(self, f, file, m):
+        return self.func_writer.write(f, file, m)
+
+    def write_enum(self, enum, file, m):
+        return self.enum_writer.write(enum, file, m)
 
 
 class _noencoded(object):
