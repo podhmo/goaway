@@ -132,7 +132,7 @@ class EnumWriter:
         @file.method(
             "String", enum, returns=r.string, comment="stringer implementation", nostore=True
         )
-        def string(m, file):
+        def string(m):
             s = enum.shortname
             with m.switch(s) as sw:
                 for name, value, _ in enum.members.values():
@@ -161,7 +161,7 @@ class EnumWriter:
             comment="parse",
             nostore=True
         )
-        def parse(m, file):
+        def parse(m):
             s = enum.shortname
             with m.switch(s) as sw:
                 for name, value, _ in enum.members.values():
