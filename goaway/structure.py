@@ -118,7 +118,7 @@ class File(Stringable):
         self.enums = OrderedDict()
 
     def string(self):
-        return self.filepath
+        return self.fullname
 
     @property
     def fullname(self):

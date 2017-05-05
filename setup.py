@@ -51,5 +51,7 @@ setup(name='goaway',
       tests_require=tests_require,
       test_suite="goaway.tests",
       entry_points="""
+      [console_scripts]
+      swagger2go=goaway.cmd.swagger2go:main
 """)
 
