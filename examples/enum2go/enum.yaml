@@ -1,0 +1,23 @@
+priority.go:
+  priority:
+    type: integer
+    enum:
+      high:
+        value: 1
+      normal:
+        value: 0
+      low:
+        value: -1
+colors.go:
+  color:
+    type: string
+    description: colors
+    enum:
+      red:
+        description: red color
+      blue:
+        description: blue color
+      yellow:
+        description: yellow color
+      green:
+        description: green color

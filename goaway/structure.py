@@ -1,7 +1,10 @@
 import os.path
 from collections import OrderedDict
 from prestring import LazyFormat
-from prestring.go import goname
+from prestring.go import (
+    goname,
+    titlize,
+)
 from .langhelpers import (
     reify,
     nameof,
@@ -140,6 +143,7 @@ class File(Stringable):
         return v
 
     def enum(self, name, type, comment=None):
+        name = goname(name)
         enum = self.new_instance(Enum, name, file=self, type=type, comment=comment)
         self.enums[name] = enum
         return enum
@@ -194,7 +198,7 @@ class Enum(Stringable, Typeaable):
         return member
 
     def varname(self, name):
-        return goname("{}{}".format(self.name, name))
+        return goname("{}{}".format(self.name, titlize(name)))
 
     # typeable
     @property

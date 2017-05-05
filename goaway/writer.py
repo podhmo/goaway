@@ -36,6 +36,7 @@ class Writer:
         for enum in file.enums.values():
             self.write_enum(enum, file, m=m)
             m.sep()
+        im.clear_ifempty()
         return m
 
     def write_function(self, f, file, m):
@@ -49,6 +50,7 @@ class Writer:
         return m
 
     def write_enum(self, enum, file, m):
+        fmt = m.import_("fmt")
         m.stmt('// {} : {}'.format(enum.name, enum.comment or ""))
         m.stmt("type {} {}".format(enum.name, enum.type.typename(file)))
         m.sep()
@@ -69,6 +71,14 @@ class Writer:
                 for name, value, _ in enum.members.values():
                     with sw.case(enum.varname(name)):
                         sw.return_(tostring(name))
+                with sw.default():
+                    sw.stmt(
+                        'panic({})'.format(
+                            fmt.Sprintf(
+                                "unexpected {} %v, in string()".format(enum.name), _noencoded(s)
+                            )
+                        )
+                    )
             return m
 
         @file.func(
@@ -82,10 +92,26 @@ class Writer:
             s = enum.shortname
             with m.switch(s) as sw:
                 for name, value, _ in enum.members.values():
-                    with sw.case(tostring(name)):
+                    with sw.case(tostring(value)):
                         sw.return_(enum.varname(name))
+                with sw.default():
+                    sw.stmt(
+                        'panic({})'.format(
+                            fmt.Sprintf(
+                                "unexpected {} %v, in parse()".format(enum.name), _noencoded(s)
+                            )
+                        )
+                    )
             return m
 
         self.write_function(string, file, m)
         self.write_function(parse, file, m)
         return m
+
+
+class _noencoded(object):
+    def __init__(self, v):
+        self.v = v
+
+    def __str__(self):
+        return self.v
