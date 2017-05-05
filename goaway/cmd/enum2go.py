@@ -3,6 +3,7 @@ import logging
 from prestring import go
 from dictknife import loading
 from goaway import get_repository
+from magicalimport import import_symbol
 logger = logging.getLogger(__name__)
 
 DEFAULT_MAPPING = {
@@ -37,12 +38,13 @@ def main():
     parser.add_argument("src", nargs="?", default=None)
     parser.add_argument("--package", default=None)
     parser.add_argument("--position", default=".")
+    parser.add_argument("--writer", default="goaway.writer:Writer")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
     loading.setup()
     data = loading.loadfile(args.src)
-    r = get_repository()
+    r = get_repository(writer_cls=import_symbol(args.writer))
     package = r.package(args.package or "main")
     resolve(data, package, r)
 
