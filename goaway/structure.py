@@ -128,6 +128,8 @@ class File(Stringable):
         self.imported = OrderedDict()
         self.functions = OrderedDict()
         self.enums = OrderedDict()
+        self.structs = OrderedDict()
+        self.interfaces = OrderedDict()
 
     def string(self):
         return self.fullname
@@ -148,13 +150,25 @@ class File(Stringable):
         self.enums[name] = enum
         return enum
 
+    def struct(self, name, comment=None):
+        name = name
+        struct = self.new_instance(Struct, name, file=self, comment=comment)
+        self.structs[name] = struct
+        return struct
+
+    def interface(self, name, comment=None):
+        name = name
+        interface = self.new_instance(Interface, name, file=self, comment=comment)
+        self.interfaces[name] = interface
+        return interface
+
     def func(self, name, args=None, returns=None, body=None, comment=None, nostore=False):
-        function = self.new_instance(
+        f = self.new_instance(
             Function, name, file=self, args=args, returns=returns, body=body, comment=comment
         )
         if not nostore:
-            self.functions[name] = function
-        return function
+            self.functions[name] = f
+        return f
 
     def method(
         self, name, subject, args=None, returns=None, body=None, comment=None, nostore=False
@@ -165,45 +179,6 @@ class File(Stringable):
         if not nostore:
             self.functions[(subject.fullname, name)] = method
         return method
-
-
-class Enum(Stringable, Typeaable, Valueable):
-    def __init__(self, name, type, file, comment=None):
-        self.name = name
-        self.type = type
-        self.file = file
-        self.comment = comment
-        self.members = OrderedDict()
-
-    def __enter__(self):
-        return self.add_member
-
-    def __exit__(self, type, value, tb):
-        return None
-
-    def string(self):
-        if self.package.virtual:
-            return self.name
-        return "{}.{}".format(self.package.name, self.name)
-
-    def verbose(self):
-        return "<{}.{} name='{}.{}', type='{}', members={!r}>".format(
-            self.__class__.__module__, self.__class__.__name__, self.file.package.name, self.name,
-            self.type.string(), dict(self.members)
-        )
-
-    def add_member(self, name, value, comment=None):
-        member = (name, value, comment)
-        self.members[name] = member
-        return member
-
-    def varname(self, name):
-        return goname("{}{}".format(self.name, titlize(name)))
-
-    # typeable
-    @property
-    def package(self):
-        return self.file.package
 
 
 class ImportedPackage(Stringable):
@@ -248,6 +223,128 @@ class Symbol(Type):
         return LazyFormat("{}({})", self.string(), ", ".join([tostring(e) for e in args]))
 
 
+class Enum(Stringable, Typeaable, Valueable):
+    def __init__(self, name, type, file, comment=None):
+        self.name = name
+        self.type = type
+        self.file = file
+        self.comment = comment
+        self.members = OrderedDict()
+
+    def __enter__(self):
+        return self.add_member
+
+    def __exit__(self, type, value, tb):
+        return None
+
+    def string(self):
+        if self.package.virtual:
+            return self.name
+        return "{}.{}".format(self.package.name, self.name)
+
+    def verbose(self):
+        return "<{}.{} name='{}.{}', type='{}', members={!r}>".format(
+            self.__class__.__module__, self.__class__.__name__, self.file.package.name, self.name,
+            self.type.string(), dict(self.members)
+        )
+
+    def add_member(self, name, value, comment=None):
+        member = (name, value, comment)
+        self.members[name] = member
+        return member
+
+    def varname(self, name):
+        return goname("{}{}".format(self.name, titlize(name)))
+
+    # typeable
+    @property
+    def package(self):
+        return self.file.package
+
+
+class Struct(Stringable, Typeaable, Valueable):
+    def __init__(self, name, file, comment=None):
+        self.name = name
+        self.file = file
+        self.comment = comment
+        self.fields = OrderedDict()
+
+    def __enter__(self):
+        return self.add_field
+
+    def __exit__(self, type, value, tb):
+        return None
+
+    def string(self):
+        if self.package.virtual:
+            return self.name
+        return "{}.{}".format(self.package.name, self.name)
+
+    def verbose(self):
+        return "<{}.{} name='{}.{}', type='{}'>".format(
+            self.__class__.__module__,
+            self.__class__.__name__,
+            self.file.package.name,
+            self.name,
+            self.type.string(),
+        )
+
+    def add_field(self, name, type, tag=None, comment=None):
+        field = (name, type, tag, comment)
+        self.fields[name] = field
+        return field
+
+    def varname(self, name):
+        return goname("{}{}".format(self.name, titlize(name)))
+
+    # typeable
+    @property
+    def package(self):
+        return self.file.package
+
+
+class Interface(Stringable, Typeaable, Valueable):
+    def __init__(self, name, file, comment=None):
+        self.name = name
+        self.file = file
+        self.comment = comment
+        self.methods = OrderedDict()
+
+    def __enter__(self):
+        return self.add_method
+
+    def __exit__(self, type, value, tb):
+        return None
+
+    def string(self):
+        if self.package.virtual:
+            return self.name
+        return "{}.{}".format(self.package.name, self.name)
+
+    def verbose(self):
+        return "<{}.{} name='{}.{}', type='{}'>".format(
+            self.__class__.__module__,
+            self.__class__.__name__,
+            self.file.package.name,
+            self.name,
+            self.type.string(),
+        )
+
+    def add_method(self, name, args=None, returns=None, tag=None, comment=None):
+        f = self.new_instance(Function, name, file=self.file, args=args, returns=returns)
+        method = (name, f, tag, comment)
+        self.methods[name] = method
+        return method
+
+    def varname(self, name):
+        return goname("{}{}".format(self.name, titlize(name)))
+
+    # typeable
+    @property
+    def package(self):
+        return self.file.package
+
+
 class Function(Stringable, Valueable):
     def __init__(self, name, file, args=None, returns=None, body=None, comment=None):
         self.name = name
@@ -280,15 +377,15 @@ class Function(Stringable, Valueable):
         else:
             return LazyFormat("{}({})", self.name, ", ".join([tostring(e) for e in args]))
 
-    def string(self):
+    def string(self, prefi="func"):
         args = "" if self.args is None else self.args.withtype(self.file)
         returns = "" if self.returns is None else " {}".format(self.returns.withtype(self.file))
-        return "func {}({}){}".format(self.name, args, returns)
+        return "{} {}({}){}".format(prefix, self.name, args, returns)
 
-    def typename(self, file):
+    def typename(self, file, prefix="func"):
         args = "" if self.args is None else self.args.typename(file)
         returns = "" if self.returns is None else " {}".format(self.returns.typename(file))
-        return "func({}){}".format(args, returns)
+        return "{}({}){}".format(prefix, args, returns)
 
 
 class Method(Function):
