@@ -27,32 +27,28 @@ def nameof(fullname, name=None):
     return name or fullname.split("/", -1)[-1]
 
 
-def stringable(cls):  # why not using inheritance?
-    if "_stringable" in cls.__dict__:
-        return cls
-    # marked
-    cls._stringable = True
+def string(value):
+    return value.string()
 
-    original = cls.__init__
 
-    def init(self, *args, repository=None, **kwargs):
-        original(self, *args, **kwargs)
-        self.repository = repository
+def verbose_string(value):
+    if hasattr(value, "verbose"):
+        return value.verbose()
+    else:
+        return "<{value.__class__.__module__}.{value.__class__.__name__}: {!r}>".format(
+            value.string(), value=value
+        )
 
+
+stringer_function = string
+
+
+class Stringable:
     def __str__(self):
-        return self.repository.stringer.string(self)
+        return stringer_function(self)
 
     def new_instance(self, cls, *args, **kwargs):
-        kwargs["repository"] = self.repository
         return cls(*args, **kwargs)
-
-    cls.__str__ = __str__
-    cls.__init__ = init
-    cls.new_instance = new_instance
-
-    if not hasattr(cls, "string"):
-        raise NotImplementedError("string() method is not found")
-    return cls
 
 
 class Typeaable:
@@ -91,8 +87,7 @@ class Valueable:
         return "{} {}".format(self.name, self.typename(file))
 
 
-@stringable
-class Package:
+class Package(Stringable):
     def __init__(self, fullname, name=None, virtual=False):
         self.fullname = fullname
         self.name = nameof(fullname, name)
@@ -132,8 +127,7 @@ class Package:
         return self.new_instance(Symbol, name, package=self)
 
 
-@stringable
-class File:
+class File(Stringable):
     def __init__(self, name, package):
         self.name = name
         self.package = package
@@ -165,8 +159,7 @@ class File:
         return function
 
 
-@stringable
-class Enum(Typeaable):
+class Enum(Stringable, Typeaable):
     def __init__(self, name, type, file, comment=None):
         self.name = name
         self.type = type
@@ -202,8 +195,7 @@ class Enum(Typeaable):
         return self.file.package
 
 
-@stringable
-class ImportedPackage:
+class ImportedPackage(Stringable):
     def __init__(self, fullname, name=None, package=None):
         self.fullname = fullname
         self.name = nameof(fullname, name)
@@ -229,8 +221,7 @@ class ImportedPackage:
         return self.new_instance(Symbol, name, package=self)
 
 
-@stringable
-class Type(Typeaable):
+class Type(Stringable, Typeaable):
     def __init__(self, name, package):
         self.name = name
         self.package = package
@@ -245,7 +236,6 @@ class Type(Typeaable):
         return "{}.{}".format(self.package.fullname, self.name)
 
 
-@stringable
 class Symbol(Type):
     def __call__(self, *args):
         return LazyFormat("{}({})", self.string(), ", ".join([_encode(e) for e in args]))
@@ -258,8 +248,7 @@ def _encode(v):
         return str(v)
 
 
-@stringable
-class Function(Valueable):
+class Function(Stringable, Valueable):
     def __init__(self, name, file, args=None, returns=None, body=None, comment=None):
         self.name = name
         self.file = file
@@ -311,8 +300,7 @@ class Function(Valueable):
         return "func({}){}".format(args, returns)
 
 
-@stringable
-class Args:
+class Args(Stringable):
     def __init__(self, args, function):
         self.args = args
         self.function = function
@@ -330,8 +318,7 @@ class Args:
         return ", ".join([e.withtype(file) for e in self.args])
 
 
-@stringable
-class Returns:
+class Returns(Stringable):
     def __init__(self, args, function):
         self.args = args
         self.function = function
@@ -354,8 +341,7 @@ class Returns:
         return self.typename(file)  # xxx
 
 
-@stringable
-class Value(Valueable):
+class Value(Stringable, Valueable):
     def __init__(self, name, type):
         self.name = name
         self.type = type
@@ -380,8 +366,7 @@ class Value(Valueable):
         return self.type.package
 
 
-@stringable
-class Ref(Valueable):
+class Ref(Stringable, Valueable):
     def __init__(self, v):
         self.v = v
 
@@ -403,8 +388,7 @@ class Ref(Valueable):
         return "&{}".format(self.v.typename(file))
 
 
-@stringable
-class Pointer(Valueable):
+class Pointer(Stringable, Valueable):
     def __init__(self, v):
         self.v = v
 
@@ -426,8 +410,7 @@ class Pointer(Valueable):
         return "*{}".format(self.v.typename(file))
 
 
-@stringable
-class Slice(Valueable):
+class Slice(Stringable, Valueable):
     def __init__(self, v):
         self.v = v
 
@@ -444,26 +427,6 @@ class Slice(Valueable):
 
     def withtype(self, file, typename=None):
         return self.v.withtype(file=file, typename=typename or self.typename(file))
-
-
-class Stringer:
-    def string(self, value):
-        return value.string()
-
-
-class VerboseStringer:
-    def string(self, value):
-        if hasattr(value, "verbose"):
-            return value.verbose()
-        else:
-            return "<{value.__class__.__module__}.{value.__class__.__name__}: {!r}>".format(
-                value.string(), value=value
-            )
-
-
-class FullnameStringer:
-    def string(self, value):
-        return value.fullname
 
 
 class Writer:
@@ -501,16 +464,13 @@ class Writer:
         return m
 
 
-def get_repository(stringer=None, writer=None):
-    stringer = stringer or Stringer()
+def get_repository(writer=None):
     writer = writer or Writer()
-    return Repository(stringer, writer)
+    return Repository(writer)
 
 
 class Repository:
-    # todo: writer
-    def __init__(self, stringer, writer):
-        self.stringer = stringer
+    def __init__(self, writer):
         self.writer = writer
         self.builtins = self.make_builtins()
         self.packages = OrderedDict()
@@ -519,13 +479,13 @@ class Repository:
         return getattr(self.builtins, name)
 
     def make_builtins(self):
-        b = Package("*builtins*", name="*builtins*", virtual=True, repository=self)
+        b = Package("*builtins*", name="*builtins*", virtual=True)
         b.int = b.type("int")
         b.string = b.type("string")
         return b
 
     def package(self, fullname, name=None):
         if fullname not in self.packages:
-            package = Package(fullname, name=name, repository=self)
+            package = Package(fullname, name=name)
             self.packages[fullname] = package
         return self.packages[fullname]
