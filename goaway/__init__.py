@@ -255,45 +255,42 @@ class Function(Stringable, Valueable):
     def __init__(self, name, file, args=None, returns=None, body=None, comment=None):
         self.name = name
         self.file = file
-        self._args = None
-        self._returns = None
-        self._body = body
+        self.args = None
+        self.returns = None
+        self.body = body
         self.comment = comment
 
         if args is not None:
-            self._args = self.new_instance(Args, args, function=self)
+            self.args = self.new_instance(Args, args, function=self)
         if returns is not None:
-            self._returns = self.new_instance(Returns, returns, function=self)
+            self.returns = self.new_instance(Returns, returns, function=self)
 
     def __getattr__(self, name):
-        for e in self._args or []:
+        for e in self.args or []:
             if e.name == name:
                 setattr(self, name, e)
                 return e
-        for e in self._returns or []:
+        for e in self.returns or []:
             if e.name == name:
                 setattr(self, name, e)
                 return e
         raise AttributeError(name)
 
-    def body(self, fn):
-        self._body = fn  # xxx
-        return self
-
     def __call__(self, *args):
-        if self._body is None:
-            return self.body(*args)  # dangerous!!!!!!
+        if self.body is None:
+            self.body = args[0] # dangerous!!!!!!
+            return self
         else:
             return LazyFormat("{}({})", self.name, ", ".join([_encode(e) for e in args]))
 
     def string(self):
-        args = "" if self._args is None else self._args.withtype(self.file)
-        returns = "" if self._returns is None else " {}".format(self._returns.withtype(self.file))
+        args = "" if self.args is None else self.args.withtype(self.file)
+        returns = "" if self.returns is None else " {}".format(self.returns.withtype(self.file))
         return "func {}({}){}".format(self.name, args, returns)
 
     def typename(self, file):
-        args = "" if self._args is None else self._args.typename(file)
-        returns = "" if self._returns is None else " {}".format(self._returns.typename(file))
+        args = "" if self.args is None else self.args.typename(file)
+        returns = "" if self.returns is None else " {}".format(self.returns.typename(file))
         return "func({}){}".format(args, returns)
 
 
@@ -452,7 +449,7 @@ class Writer:
             m.append(str(func))
             m.stmt(" {")
             with m.scope():
-                func._body(m)
+                func.body(m)
             m.stmt("}")
             m.sep()
 
