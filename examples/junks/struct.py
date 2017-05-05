@@ -3,6 +3,11 @@ from goaway import get_repository
 r = get_repository()
 f = r.package("main").file("main.go")
 
+status = f.enum("Status", r.string)
+with status as member:
+    member("ok", "OK")
+    member("ng", "NG")
+
 with f.struct("Person") as field:
     field("Name", r.string, comment="person's name")
     field("Age", r.int)
