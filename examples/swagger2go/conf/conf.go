@@ -1,9 +1,9 @@
 // Conf :
 type Conf struct {
 	Platforms Platforms `json:"platforms" bson:"platforms"`
-	Description string `json:"description" bson:"description"`
-	Accessories Accessories `json:"accessories" bson:"accessories"`
 	Bridge *Bridge `json:"bridge" bson:"bridge"`
+	Accessories Accessories `json:"accessories" bson:"accessories"`
+	Description string `json:"description" bson:"description"`
 }
 
 // Platforms :
@@ -11,8 +11,16 @@ type Platforms []PlatformsItem
 
 // PlatformsItem :
 type PlatformsItem struct {
-	Platform string `json:"platform" bson:"platform"`
 	Name string `json:"name" bson:"name"`
+	Platform string `json:"platform" bson:"platform"`
+}
+
+// Bridge :
+type Bridge struct {
+	Username string `json:"username" bson:"username"`
+	Name string `json:"name" bson:"name"`
+	Pin string `json:"pin" bson:"pin"`
+	Port int64 `json:"port" bson:"port"`
 }
 
 // Accessories :
@@ -20,14 +28,6 @@ type Accessories []AccessoriesItem
 
 // AccessoriesItem :
 type AccessoriesItem struct {
+	Name string `json:"name" bson:"name"`
 	Accessory string `json:"accessory" bson:"accessory"`
-	Name string `json:"name" bson:"name"`
-}
-
-// Bridge :
-type Bridge struct {
-	Port int64 `json:"port" bson:"port"`
-	Pin string `json:"pin" bson:"pin"`
-	Username string `json:"username" bson:"username"`
-	Name string `json:"name" bson:"name"`
 }
