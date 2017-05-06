@@ -151,7 +151,6 @@ class EnumWriter:
         self.writer.write_function(string, file, m)
 
     def write_parse_method(self, enum, file, m):
-        r = self.repository
         fmt = m.import_("fmt")
 
         @file.func(

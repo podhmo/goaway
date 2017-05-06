@@ -48,6 +48,6 @@ class Repository:
 
     def package(self, fullname, name=None):
         if fullname not in self.packages:
-            package = Package(fullname, name=name)
+            package = Package(fullname, name=name, repository=self)
             self.packages[fullname] = package
         return self.packages[fullname]

@@ -83,11 +83,12 @@ class Valueable:
 
 
 class Package(Stringable):
-    def __init__(self, fullname, name=None, virtual=False):
+    def __init__(self, fullname, name=None, virtual=False, repository=None):
         self.fullname = fullname
         self.name = nameof(fullname, name)
         self.virtual = virtual
         self.files = OrderedDict()
+        self.repository = repository
 
     def string(self):
         return "package {}".format(self.name)
@@ -138,6 +139,15 @@ class File(Stringable):
     @property
     def fullname(self):
         return os.path.join(self.package.filepath, self.name)
+
+    def __getattr__(self, name):
+        r = self.package.repository
+        if r is not None:
+            v = getattr(r, name, None)
+            if v is not None:
+                setattr(self, name, v)
+                return v
+        raise AttributeError(name)
 
     def import_(self, fullname, as_=None):
         if fullname in self.imported:
