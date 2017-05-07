@@ -68,8 +68,6 @@ def make_builtins(name):
     b.float64 = b.type("float64")
     b.complex64 = b.type("complex64")
     b.complex128 = b.type("complex128")
-    b.string = b.type("string")
-    b.int = b.type("int")
     b.map = Map
     b.chan = b.channel = Channel
     return b

@@ -13,7 +13,7 @@ from .langhelpers import (
 
 
 def string(value):
-    return value.string()
+    return value.tostring()
 
 
 def verbose_string(value):
@@ -21,7 +21,7 @@ def verbose_string(value):
         return value.verbose()
     else:
         return "<{value.__class__.__module__}.{value.__class__.__name__}: {!r}>".format(
-            value.string(), value=value
+            value.tostring(), value=value
         )
 
 
@@ -90,11 +90,11 @@ class Package(Stringable):
         self.files = OrderedDict()
         self.repository = repository
 
-    def string(self):
+    def tostring(self):
         return "package {}".format(self.name)
 
     def verbose(self):
-        return self.string()
+        return self.tostring()
 
     def __getattr__(self, name):
         v = self.symbol(name)
@@ -133,7 +133,7 @@ class File(Stringable):
         self.structs = OrderedDict()
         self.interfaces = OrderedDict()
 
-    def string(self):
+    def tostring(self):
         return self.fullname
 
     @property
@@ -196,11 +196,11 @@ class ImportedPackage(Stringable):
         self.package = package
         self.virtual = False
 
-    def string(self):
+    def tostring(self):
         return self.fullname
 
     def verbose(self):
-        return self.string()
+        return self.tostring()
 
     def type(self, name):
         return Type(name, package=self)
@@ -219,7 +219,7 @@ class Type(Stringable, Typeable, Valueable):
         self.name = name
         self.package = package
 
-    def string(self):
+    def tostring(self):
         if self.package.virtual:
             return self.name
         return "{}.{}".format(self.package.name, self.name)
@@ -227,7 +227,7 @@ class Type(Stringable, Typeable, Valueable):
 
 class Symbol(Type):
     def __call__(self, *args):
-        return LazyFormat("{}({})", self.string(), ", ".join([tostring(e) for e in args]))
+        return LazyFormat("{}({})", self.tostring(), ", ".join([tostring(e) for e in args]))
 
 
 class Enum(Stringable, Typeable, Valueable):
@@ -244,7 +244,7 @@ class Enum(Stringable, Typeable, Valueable):
     def __exit__(self, type, value, tb):
         return None
 
-    def string(self):
+    def tostring(self):
         if self.package.virtual:
             return self.name
         return "{}.{}".format(self.package.name, self.name)
@@ -252,7 +252,7 @@ class Enum(Stringable, Typeable, Valueable):
     def verbose(self):
         return "<{}.{} name='{}.{}', type='{}', members={!r}>".format(
             self.__class__.__module__, self.__class__.__name__, self.file.package.name, self.name,
-            self.type.string(), dict(self.members)
+            self.type.tostring(), dict(self.members)
         )
 
     def add_member(self, name, value, comment=None):
@@ -282,7 +282,7 @@ class Struct(Stringable, Typeable, Valueable):
     def __exit__(self, type, value, tb):
         return None
 
-    def string(self):
+    def tostring(self):
         if self.package.virtual:
             return self.name
         return "{}.{}".format(self.package.name, self.name)
@@ -293,7 +293,7 @@ class Struct(Stringable, Typeable, Valueable):
             self.__class__.__name__,
             self.file.package.name,
             self.name,
-            self.type.string(),
+            self.type.tostring(),
         )
 
     def add_field(self, name, type=None, tag=None, comment=None):
@@ -329,7 +329,7 @@ class Interface(Stringable, Typeable, Valueable):
     def __exit__(self, type, value, tb):
         return None
 
-    def string(self):
+    def tostring(self):
         if self.package.virtual:
             return self.name
         return "{}.{}".format(self.package.name, self.name)
@@ -340,7 +340,7 @@ class Interface(Stringable, Typeable, Valueable):
             self.__class__.__name__,
             self.file.package.name,
             self.name,
-            self.type.string(),
+            self.type.tostring(),
         )
 
     def add_method(self, name, args=None, returns=None, tag=None, comment=None):
@@ -396,7 +396,7 @@ class Function(Stringable, Valueable):
         else:
             return LazyFormat("{}({})", self.name, ", ".join([tostring(e) for e in args]))
 
-    def string(self, prefix="func"):
+    def tostring(self, prefix="func"):
         args = "" if self.args is None else self.args.withtype(self.file)
         returns = "" if self.returns is None else " {}".format(self.returns.withtype(self.file))
         return "{} {}({}){}".format(prefix, self.name, args, returns)
@@ -412,7 +412,7 @@ class Method(Function):
         self.subject = subject
         super().__init__(name, subject.file, args=args, returns=returns, body=body, comment=comment)
 
-    def string(self):
+    def tostring(self):
         file = self.file  # xxx:
         args = "" if self.args is None else self.args.withtype(file)
         returns = "" if self.returns is None else " {}".format(self.returns.withtype(file))
@@ -431,7 +431,7 @@ class Args(Stringable):
     def __iter__(self):
         return iter(self.args)
 
-    def string(self):
+    def tostring(self):
         return self.withtype(self.function.file)
 
     def typename(self, file):
@@ -451,7 +451,7 @@ class Returns(Stringable):
     def __iter__(self):
         return iter(self.args)
 
-    def string(self):
+    def tostring(self):
         return self.withtype(self.function.file)
 
     def typename(self, file):
@@ -471,12 +471,12 @@ class Value(Stringable, Valueable):
         self.name = name
         self.type = type
 
-    def string(self):
+    def tostring(self):
         return self.name
 
     def verbose(self):
         return "<{}.{} name='{}', type='{}'>".format(
-            self.__class__.__module__, self.__class__.__name__, self.name, self.type.string()
+            self.__class__.__module__, self.__class__.__name__, self.name, self.type.tostring()
         )
 
     @property
@@ -514,7 +514,7 @@ class Map(Stringable, Valueable):
     def __getattr__(self, name):
         return getattr(self.k, name)  # xxx
 
-    def string(self):
+    def tostring(self):
         return self.typename(None)
 
     def typename(self, file):
@@ -530,7 +530,7 @@ class Channel(Stringable, Valueable):
     def __getattr__(self, name):
         return getattr(self.v, name)  # xxx
 
-    def string(self):
+    def tostring(self):
         return self.typename(None)
 
     def typename(self, file):
