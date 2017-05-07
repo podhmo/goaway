@@ -56,23 +56,34 @@ class FuncWriter:
         return m
 
 
+def _writecomment(m, prefix, comment):
+    m.append(prefix)
+    if not comment:
+        m.stmt("")
+        return
+    lines = comment.strip().split("\n")
+    m.stmt(lines[0])
+    for line in lines[1:]:
+        m.stmt("// {}", line)
+
+
 class StructWriter:
     def __init__(self, writer):
         self.writer = writer
 
     def write(self, struct, file, m):
         if struct.comment is not None or struct.name[0].isupper():
-            m.stmt('// {} : {}'.format(struct.name, struct.comment or ""))
+            _writecomment(m, '// {} : '.format(struct.name), struct.comment or "")
         with m.type_(struct.name, "struct"):
             for name, type, tag, comment, embeded in struct.fields.values():
+                if comment is not None:
+                    _writecomment(m, '// ', comment)
                 if embeded:
                     m.append(type.typename(file))
                 else:
                     m.append("{} {}".format(name, type.typename(file)))
                 if tag is not None:
                     m.append(" {}".format(tag))
-                if comment is not None:
-                    m.append(' // {}'.format(comment))
                 m.stmt("")
         return m
 
@@ -83,17 +94,17 @@ class InterfaceWriter:
 
     def write(self, interface, file, m):
         if interface.comment is not None or interface.name[0].isupper():
-            m.stmt('// {} : {}'.format(interface.name, interface.comment or ""))
+            _writecomment(m, '// {} : '.format(interface.name), interface.comment or "")
         with m.type_(interface.name, "interface"):
             for name, f, tag, comment, embeded in interface.methods.values():
+                if comment is not None:
+                    _writecomment(m, '// ', comment)
                 if embeded:
                     m.append(f.typename(file))
                 else:
-                    m.append(f.typename(file, prefix=name))
+                    m.append(f.withtype(file, prefix=""))
                 if tag is not None:
                     m.append(" {}".format(tag))
-                if comment is not None:
-                    m.append(' // {}'.format(comment))
                 m.stmt("")
         return m
 

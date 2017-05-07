@@ -54,7 +54,8 @@ type MoreGreeter interface {
 
 // Person : 
 type Person struct {
-	Name string // person's name
+	// person's name
+	Name string
 	Age int
 	Father *Person
 	Mother *Person

@@ -246,4 +246,4 @@ class DefineInterfaceTests(unittest.TestCase):
         self.assertEqual(
             str(Writer.Write.typename(file, prefix=Writer.Write.name)), "Write(string)"
         )
-        self.assertEqual(str(Writer.Write.withtype(file, prefix="")), " Write(s string)")  # xxx
+        self.assertEqual(str(Writer.Write.withtype(file, prefix="")), "Write(s string)")  # xxx

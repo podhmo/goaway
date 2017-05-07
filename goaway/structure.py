@@ -446,7 +446,7 @@ class Function(Stringable, Valueable):
     def withtype(self, file, prefix="func"):
         args = "" if self.args is None else self.args.withtype(file)
         returns = "" if self.returns is None else " {}".format(self.returns.withtype(file))
-        return "{} {}({}){}".format(prefix, self.name, args, returns)
+        return "{} {}({}){}".format(prefix, self.name, args, returns).lstrip(" ")
 
 
 class Method(Function):
