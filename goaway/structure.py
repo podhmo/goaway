@@ -179,6 +179,8 @@ class File(Stringable):
             self.functions[name] = f
         return f
 
+    function = func
+
     def method(
         self, name, subject, args=None, returns=None, body=None, comment=None, nostore=False
     ):

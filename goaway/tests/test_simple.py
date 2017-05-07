@@ -43,7 +43,7 @@ class ExternalPackageTests(unittest.TestCase):
         self.assertEqual(str(time.type("Time")("x")), "x")
 
 
-class StructTests(unittest.TestCase):
+class DefineStructTests(unittest.TestCase):
     def _makeFile(self, name, package="main", as_=None):
         from goaway import get_repository
         return get_repository().package(package, as_).file(name)
@@ -134,7 +134,7 @@ class StructTests(unittest.TestCase):
         self.assertEqual(str(p.BirthDay.withtype(file)), "p.BirthDay p.BirthDay")  # xxx
 
 
-class EnumTests(unittest.TestCase):
+class DefineEnumTests(unittest.TestCase):
     def _makeFile(self, name, package="main", as_=None):
         from goaway import get_repository
         return get_repository().package(package, as_).file(name)
@@ -182,7 +182,38 @@ class EnumTests(unittest.TestCase):
         self.assertEqual(str(s.withtype(file)), "s *Status")
 
 
-class InterfaceTests(unittest.TestCase):
+class DefineFunctionTests(unittest.TestCase):
+    def _makeFile(self, name, package="main", as_=None):
+        from goaway import get_repository
+        return get_repository().package(package, as_).file(name)
+
+    def _makeOne(self, file, name, *args, **kwargs):
+        return file.func(name, *args, **kwargs)
+
+    def test_type(self):
+        file = self._makeFile("main.go")
+        Add = self._makeOne(file, "Add", args=(file.int("x"), file.int("y")), returns=file.int)
+        self.assertEqual(str(Add), "func Add(x int, y int) int")
+
+    def test_type_with_file(self):
+        file = self._makeFile("main.go")
+        Add = self._makeOne(file, "Add", args=(file.int("x"), file.int("y")), returns=file.int)
+        self.assertEqual(str(Add.typename(file)), "func(int, int) int")
+
+    def test_type_with_file2(self):
+        file = self._makeFile("main.go")
+        file2 = self._makeFile("foo.go", package="github.com/foo/foo")
+        Add = self._makeOne(file2, "Add", args=(file.int("x"), file.int("y")), returns=file.int)
+        self.assertEqual(str(Add.typename(file)), "func(int, int) int")
+
+    def test_type_with_external_package(self):
+        file = self._makeFile("main.go")
+        Time = file.import_("time").type("Time")
+        Add = self._makeOne(file, "Add", args=(Time("x"), Time("y")), returns=Time)
+        self.assertEqual(str(Add.typename(file)), "func(time.Time, time.Time) time.Time")
+
+
+class DefineInterfaceTests(unittest.TestCase):
     def _makeFile(self, name, package="main", as_=None):
         from goaway import get_repository
         return get_repository().package(package, as_).file(name)
@@ -212,5 +243,7 @@ class InterfaceTests(unittest.TestCase):
         Writer.define_method("Write", args=file.string("s"))
         self.assertEqual(str(Writer.Write), "func Write(s string)")
         self.assertEqual(str(Writer.Write.typename(file)), "func(string)")
-        self.assertEqual(str(Writer.Write.typename(file, prefix=Writer.Write.name)), "Write(string)")
+        self.assertEqual(
+            str(Writer.Write.typename(file, prefix=Writer.Write.name)), "Write(string)"
+        )
         self.assertEqual(str(Writer.Write.withtype(file, prefix="")), " Write(s string)")  # xxx
