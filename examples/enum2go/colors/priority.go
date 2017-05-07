@@ -5,7 +5,7 @@ import (
 )
 
 // Priority : 
-type Priority int64
+type Priority int
 
 const (
 	// PriorityHigh : 
@@ -31,7 +31,7 @@ func (p Priority) String() string {
 
 }
 // ParsePriority : parse
-func ParsePriority(p int64) Priority {
+func ParsePriority(p int) Priority {
 	switch p {
 	case 1:
 		return PriorityHigh

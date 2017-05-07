@@ -1,7 +1,7 @@
 package tiny
 
 // Priority : 
-type Priority int64
+type Priority int
 
 const (
 	// PriorityHigh : 
