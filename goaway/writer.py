@@ -142,7 +142,8 @@ class EnumWriter:
                     sw.stmt(
                         'panic({})'.format(
                             fmt.Sprintf(
-                                "unexpected {} %v, in string()".format(enum.name), _noencoded(s)
+                                "unexpected {} %s, in string()".format(enum.name),
+                                _noencoded("string({})".format(s)),
                             )
                         )
                     )

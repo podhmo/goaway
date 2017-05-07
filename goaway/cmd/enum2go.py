@@ -35,7 +35,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("src", nargs="?", default=None)
     parser.add_argument("--package", default=None)
-    parser.add_argument("--position", default=".")
+    parser.add_argument("--position", default=None)
     parser.add_argument("--writer", default="goaway.writer:Writer")
     parser.add_argument("--emitter", default="goaway.emitter:Emitter")
 
@@ -52,7 +52,7 @@ def main():
     package = r.package(args.package or "main")
     walk(data, package, r)
 
-    d = r.resolve_package_path(args.position, package.name)
+    d = r.resolve_package_path(args.position, package)
     r.emitter.emit_package(package, d=d)
 
 

@@ -31,9 +31,11 @@ class Repository:
     def m(self):
         return GoModule()
 
-    def resolve_package_path(self, d, package_name):
-        if package_name != "main":
-            return os.path.join(d, package_name)
+    def resolve_package_path(self, d, package):
+        if d is None:
+            return package.filepath
+        if package.name != "main":
+            return os.path.join(d, package.name)
         else:
             return d
 
