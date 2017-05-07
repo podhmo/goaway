@@ -239,7 +239,7 @@ class Enum(Stringable, Typeable, Valueable):
         self.members = OrderedDict()
 
     def __enter__(self):
-        return self.add_member
+        return self.define_member
 
     def __exit__(self, type, value, tb):
         return None
@@ -255,7 +255,7 @@ class Enum(Stringable, Typeable, Valueable):
             self.type.tostring(), dict(self.members)
         )
 
-    def add_member(self, name, value, comment=None):
+    def define_member(self, name, value, comment=None):
         member = (name, value, comment)
         self.members[name] = member
         return member
@@ -277,7 +277,7 @@ class Struct(Stringable, Typeable, Valueable):
         self.fields = OrderedDict()
 
     def __enter__(self):
-        return self.add_field
+        return self.define_field
 
     def __exit__(self, type, value, tb):
         return None
@@ -296,7 +296,7 @@ class Struct(Stringable, Typeable, Valueable):
             self.type.tostring(),
         )
 
-    def add_field(self, name, type=None, tag=None, comment=None):
+    def define_field(self, name, type=None, tag=None, comment=None):
         embeded = False
         if type is None:
             type = name
@@ -324,7 +324,7 @@ class Interface(Stringable, Typeable, Valueable):
         self.methods = OrderedDict()
 
     def __enter__(self):
-        return self.add_method
+        return self.define_method
 
     def __exit__(self, type, value, tb):
         return None
@@ -343,7 +343,7 @@ class Interface(Stringable, Typeable, Valueable):
             self.type.tostring(),
         )
 
-    def add_method(self, name, args=None, returns=None, tag=None, comment=None):
+    def define_method(self, name, args=None, returns=None, tag=None, comment=None):
         embeded = False
         if args is None and returns is None and not isinstance(name, (str, bytes)):
             f = name
