@@ -433,15 +433,18 @@ class Function(Stringable, Valueable):
         else:
             return LazyFormat("{}({})", self.name, ", ".join([tostring(e) for e in args]))
 
-    def tostring(self, prefix="func"):
-        args = "" if self.args is None else self.args.withtype(self.file)
-        returns = "" if self.returns is None else " {}".format(self.returns.withtype(self.file))
-        return "{} {}({}){}".format(prefix, self.name, args, returns)
+    def tostring(self):
+        return self.withtype(self.file)  # xxx
 
     def typename(self, file, prefix="func"):
         args = "" if self.args is None else self.args.typename(file)
         returns = "" if self.returns is None else " {}".format(self.returns.typename(file))
         return "{}({}){}".format(prefix, args, returns)
+
+    def withtype(self, file, prefix="func"):
+        args = "" if self.args is None else self.args.withtype(file)
+        returns = "" if self.returns is None else " {}".format(self.returns.withtype(file))
+        return "{} {}({}){}".format(prefix, self.name, args, returns)
 
 
 class Method(Function):
@@ -451,13 +454,10 @@ class Method(Function):
         file = getattr(subject.type, "file", None)
         super().__init__(name, file, args=args, returns=returns, body=body, comment=comment)
 
-    def tostring(self):
-        file = self.file  # xxx:
+    def withtype(self, file):
         args = "" if self.args is None else self.args.withtype(file)
         returns = "" if self.returns is None else " {}".format(self.returns.withtype(file))
-        return "func ({}) {}({}){}".format(
-            self.subject.withtype(file), self.name, args, returns
-        )
+        return "func ({}) {}({}){}".format(self.subject.withtype(file), self.name, args, returns)
 
 
 class Args(Stringable):

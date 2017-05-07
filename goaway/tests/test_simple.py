@@ -180,3 +180,37 @@ class EnumTests(unittest.TestCase):
         self.assertEqual(str(s), "s")
         self.assertEqual(str(s.typename(file)), "*Status")
         self.assertEqual(str(s.withtype(file)), "s *Status")
+
+
+class InterfaceTests(unittest.TestCase):
+    def _makeFile(self, name, package="main", as_=None):
+        from goaway import get_repository
+        return get_repository().package(package, as_).file(name)
+
+    def _makeOne(self, file, name):
+        return file.interface(name)
+
+    def test_type(self):
+        file = self._makeFile("main.go")
+        Writer = self._makeOne(file, "Writer")
+        self.assertEqual(str(Writer), "main.Writer")
+
+    def test_type_with_file(self):
+        file = self._makeFile("main.go")
+        Writer = self._makeOne(file, "Writer")
+        self.assertEqual(str(Writer.typename(file)), "Writer")
+
+    def test_type_with_file2(self):
+        file = self._makeFile("main.go")
+        file2 = self._makeFile("foo.go", package="github.com/foo/foo")
+        Writer = self._makeOne(file2, "Writer")
+        self.assertEqual(str(Writer.typename(file)), "foo.Writer")
+
+    def test_method_type(self):
+        file = self._makeFile("main.go")
+        Writer = self._makeOne(file, "Writer")
+        Writer.define_method("Write", args=file.string("s"))
+        self.assertEqual(str(Writer.Write), "func Write(s string)")
+        self.assertEqual(str(Writer.Write.typename(file)), "func(string)")
+        self.assertEqual(str(Writer.Write.typename(file, prefix=Writer.Write.name)), "Write(string)")
+        self.assertEqual(str(Writer.Write.withtype(file, prefix="")), " Write(s string)")  # xxx
