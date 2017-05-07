@@ -1,16 +1,14 @@
-import os.path
 import logging
-from prestring import go
 from dictknife import loading
 from goaway import get_repository
 from magicalimport import import_symbol
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 DEFAULT_MAPPING = {
     "boolean": "bool",
     "string": "string",
-    "number": "float64",
-    "integer": "int64",
+    "number": "float",
+    "integer": "int",
 }
 
 
@@ -19,7 +17,7 @@ def resolve_type(prop, repository, mapping=DEFAULT_MAPPING):
     return getattr(repository, name)
 
 
-def resolve(data, package, r):
+def walk(data, package, r):
     for filename, d in data.items():
         f = package.file(filename)
         for name, schema in d.items():
@@ -39,25 +37,23 @@ def main():
     parser.add_argument("--package", default=None)
     parser.add_argument("--position", default=".")
     parser.add_argument("--writer", default="goaway.writer:Writer")
+    parser.add_argument("--emitter", default="goaway.emitter:Emitter")
+
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
     loading.setup()
-    data = loading.loadfile(args.src)
-    r = get_repository(writer_cls=import_symbol(args.writer))
-    package = r.package(args.package or "main")
-    resolve(data, package, r)
 
-    if package.name != "main":
-        d = os.path.join(args.position, package.name)
-    else:
-        d = args.position
-    os.makedirs(d, exist_ok=True)
-    for f in package.files.values():
-        fpath = os.path.join(d, f.name)
-        with open(fpath, "w") as wf:
-            logger.info("write: %s", fpath)
-            wf.write(str(r.writer.write(f)))
+    data = loading.loadfile(args.src)
+    r = get_repository(
+        writer_cls=import_symbol(args.writer),
+        emitter_cls=import_symbol(args.emitter),
+    )
+    package = r.package(args.package or "main")
+    walk(data, package, r)
+
+    d = r.resolve_package_path(args.position, package.name)
+    r.emitter.emit_package(package, d=d)
 
 
 if __name__ == "__main__":
