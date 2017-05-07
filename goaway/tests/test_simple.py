@@ -132,3 +132,51 @@ class StructTests(unittest.TestCase):
         self.assertEqual(str(p.BirthDay), "p.BirthDay")  # xxx
         self.assertEqual(str(p.BirthDay.typename(file)), "p.BirthDay")  # xxx
         self.assertEqual(str(p.BirthDay.withtype(file)), "p.BirthDay p.BirthDay")  # xxx
+
+
+class EnumTests(unittest.TestCase):
+    def _makeFile(self, name, package="main", as_=None):
+        from goaway import get_repository
+        return get_repository().package(package, as_).file(name)
+
+    def _makeOne(self, file, name, type):
+        return file.enum(name, type)
+
+    def test_type(self):
+        file = self._makeFile("main.go")
+        Status = self._makeOne(file, "Status", file.int)
+        self.assertEqual(str(Status), "main.Status")
+
+    def test_type_with_file(self):
+        file = self._makeFile("main.go")
+        Status = self._makeOne(file, "Status", file.int)
+        self.assertEqual(str(Status.typename(file)), "Status")
+
+    def test_type_with_file2(self):
+        file = self._makeFile("main.go")
+        file2 = self._makeFile("foo.go", package="github.com/foo/foo")
+        Status = self._makeOne(file2, "Status", file.int)
+        self.assertEqual(str(Status.typename(file)), "foo.Status")
+
+    def test_member_type(self):
+        file = self._makeFile("main.go")
+        Status = self._makeOne(file, "Status", file.int)
+        Status.define_member("OK", 0)
+        Status.define_member("NG", 1)
+        self.assertEqual(str(Status.OK), "int")
+
+    def test_variable(self):
+        file = self._makeFile("main.go")
+        Status = self._makeOne(file, "Status", file.int)
+        s = Status("s")
+        self.assertEqual(str(s), "s")
+        self.assertEqual(str(s.typename(file)), "Status")
+        self.assertEqual(str(s.withtype(file)), "s Status")
+
+    def test_variable__pointer(self):
+        file = self._makeFile("main.go")
+        Status = self._makeOne(file, "Status", file.int)
+        s = Status.pointer("s")
+        self.assertEqual(str(s), "s")
+        self.assertEqual(str(s.typename(file)), "*Status")
+        self.assertEqual(str(s.withtype(file)), "s *Status")
