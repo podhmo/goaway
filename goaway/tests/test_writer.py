@@ -66,11 +66,7 @@ class WriterTests(unittest.TestCase):
         )
         Interface = f.interface("Interface", comment=comment.strip())
 
-        len_comment = textwrap.dedent(
-            """
-        Len is the number of elements in the collection.
-        """
-        )
+        len_comment = """Len is the number of elements in the collection."""
         Interface.define_method("Len", returns=f.int, comment=len_comment)
 
         less_comment = textwrap.dedent(
@@ -83,11 +79,7 @@ class WriterTests(unittest.TestCase):
             "Less", args=(f.int("i"), f.int("j")), returns=f.bool, comment=less_comment
         )
 
-        swap_comment = textwrap.dedent(
-            """
-        Swap swaps the elements with indexes i and j.
-        """
-        )
+        swap_comment = """Swap swaps the elements with indexes i and j."""
         Interface.define_method("Swap", args=(f.int("i"), f.int("j")), comment=swap_comment)
 
         actual = str(r.writer.write_interface(Interface, f, r.m))
