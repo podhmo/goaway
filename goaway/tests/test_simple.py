@@ -31,7 +31,7 @@ class ExternalPackageTests(unittest.TestCase):
         my = self._makeOne("my")
         self.assertEqual(
             str(fmt.Printf("%d + %d = %d\n", 1, 1, my.Add(1, 1))),
-            str('fmt.Printf("%d + %d = %d\\n", 1, 1, my.Add(1, 1))'),
+            'fmt.Printf("%d + %d = %d\\n", 1, 1, my.Add(1, 1))',
         )
 
     def test_type(self):
