@@ -182,6 +182,8 @@ class File(Stringable):
     def method(
         self, name, subject, args=None, returns=None, body=None, comment=None, nostore=False
     ):
+        if isinstance(subject, Container):  # xxx
+            subject = subject(subject.shortname)
         method = Method(name, subject, args=args, returns=returns, body=body, comment=comment)
         if not nostore:
             self.functions[(subject.fullname, name)] = method
@@ -215,22 +217,42 @@ class ImportedPackage(Stringable):
 
 
 class Type(Stringable, Typeable, Valueable):
-    def __init__(self, name, package):
+    def __init__(self, name, package, virtual=False):
         self.name = name
         self.package = package
+        self.virtual = virtual or self.package.virtual
 
     def tostring(self):
-        if self.package.virtual:
+        if self.virtual:
             return self.name
         return "{}.{}".format(self.package.name, self.name)
 
 
 class Symbol(Type):
+    def __getattr__(self, name):
+        name = "{}.{}".format(self.name, name)
+        return self.__class__(name, self.package, virtual=self.virtual)
+
     def __call__(self, *args):
         return LazyFormat("{}({})", self.tostring(), ", ".join([tostring(e) for e in args]))
 
 
-class Enum(Stringable, Typeable, Valueable):
+class Container:  # xxx
+    # need: children
+    def __getattr__(self, name):
+        try:
+            # item must be tuple. (name, type, ...)
+            return self.children[name][1]  # xxx
+        except KeyError:
+            raise AttributeError(name)
+
+    def tosymbol(self, name, prefix=None):
+        if prefix:
+            name = "{}.{}".format(prefix, name)
+        return Symbol(name, self.package, virtual=True)
+
+
+class Enum(Stringable, Typeable, Valueable, Container):
     def __init__(self, name, type, file, comment=None):
         self.name = name
         self.type = type
@@ -256,12 +278,17 @@ class Enum(Stringable, Typeable, Valueable):
         )
 
     def define_member(self, name, value, comment=None):
-        member = (name, value, comment)
+        member = (name, self.type, value, comment)
         self.members[name] = member
         return member
 
     def varname(self, name):
         return goname("{}{}".format(self.name, titlize(name)))
+
+    # container
+    @property
+    def children(self):
+        return self.members
 
     # typeable
     @property
@@ -269,7 +296,7 @@ class Enum(Stringable, Typeable, Valueable):
         return self.file.package
 
 
-class Struct(Stringable, Typeable, Valueable):
+class Struct(Stringable, Typeable, Valueable, Container):
     def __init__(self, name, file, comment=None):
         self.name = name
         self.file = file
@@ -310,13 +337,18 @@ class Struct(Stringable, Typeable, Valueable):
     def varname(self, name):
         return goname("{}{}".format(self.name, titlize(name)))
 
+    # container
+    @property
+    def children(self):
+        return self.fields
+
     # typeable
     @property
     def package(self):
         return self.file.package
 
 
-class Interface(Stringable, Typeable, Valueable):
+class Interface(Stringable, Typeable, Valueable, Container):
     def __init__(self, name, file, comment=None):
         self.name = name
         self.file = file
@@ -357,6 +389,11 @@ class Interface(Stringable, Typeable, Valueable):
 
     def varname(self, name):
         return goname("{}{}".format(self.name, titlize(name)))
+
+    # container
+    @property
+    def children(self):
+        return self.methods
 
     # typeable
     @property
@@ -410,14 +447,16 @@ class Function(Stringable, Valueable):
 class Method(Function):
     def __init__(self, name, subject, args=None, returns=None, body=None, comment=None):
         self.subject = subject
-        super().__init__(name, subject.file, args=args, returns=returns, body=body, comment=comment)
+        setattr(self, subject.name, subject)
+        file = getattr(subject.type, "file", None)
+        super().__init__(name, file, args=args, returns=returns, body=body, comment=comment)
 
     def tostring(self):
         file = self.file  # xxx:
         args = "" if self.args is None else self.args.withtype(file)
         returns = "" if self.returns is None else " {}".format(self.returns.withtype(file))
-        return "func ({} {}) {}({}){}".format(
-            self.subject.shortname, self.subject.typename(file), self.name, args, returns
+        return "func ({}) {}({}){}".format(
+            self.subject.withtype(file), self.name, args, returns
         )
 
 
@@ -470,6 +509,11 @@ class Value(Stringable, Valueable):
     def __init__(self, name, type):
         self.name = name
         self.type = type
+
+    def __getattr__(self, name):
+        if hasattr(self.type, "tosymbol"):
+            return self.type.tosymbol(name, prefix=self.name)
+        return getattr(self.type, name)
 
     def tostring(self):
         return self.name

@@ -118,7 +118,7 @@ class EnumWriter:
         m.sep()
 
         with m.const_group() as cm:
-            for name, value, comment in enum.members.values():
+            for name, _, value, comment in enum.members.values():
                 name = enum.varname(name)
                 cm('// {} : {}'.format(name, comment or ""))
                 cm('{} = {}({})'.format(name, enum.name, tostring(value)))
@@ -135,7 +135,7 @@ class EnumWriter:
         def string(m):
             s = enum.shortname
             with m.switch(s) as sw:
-                for name, value, _ in enum.members.values():
+                for name, _, value, _ in enum.members.values():
                     with sw.case(enum.varname(name)):
                         sw.return_(tostring(name))
                 with sw.default():
@@ -164,7 +164,7 @@ class EnumWriter:
         def parse(m):
             s = enum.shortname
             with m.switch(s) as sw:
-                for name, value, _ in enum.members.values():
+                for name, _, value, _ in enum.members.values():
                     with sw.case(tostring(value)):
                         sw.return_(enum.varname(name))
                 with sw.default():

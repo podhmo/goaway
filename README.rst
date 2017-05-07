@@ -143,7 +143,7 @@ struct.go
   	case StatusNg:
   		return "ng"
   	default:
-  		panic(fmt.Sprintf("unexpected Status %v, in string()", s))
+  		panic(fmt.Sprintf("unexpected Status %s, in string()", string(s)))
   	}
   
   }
