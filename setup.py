@@ -54,7 +54,7 @@ setup(name='goaway',
       test_suite="goaway.tests",
       entry_points="""
       [console_scripts]
-      swagger2go=goaway.cmd.swagger2go:main
-      enum2go=goaway.cmd.enum2go:main
+      swagger2go=goaway.commands.swagger2go:main
+      enum2go=goaway.commands.enum2go:main
 """)
 
