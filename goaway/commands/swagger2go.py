@@ -40,7 +40,10 @@ class Emitter:
         elif d["type"] == "array":
             return self.emit_array(d, name=name)
         else:
-            raise NotImplementedError(name)
+            typename = self.resolve_type(d)
+            if d.get("x-nullable", False):
+                typename = "*{}".format(typename)
+            return typename
 
     def emit_object(self, d, name):
         m = self.m.submodule()
@@ -55,9 +58,7 @@ class Emitter:
                     if self.nullable[prop["$ref"]]:
                         typename = "*{}".format(typename)
                 else:
-                    typename = self.resolve_type(prop)
-                    if prop.get("x-nullable", False):
-                        typename = "*{}".format(typename)
+                    typename = self.emit(prop, name=name)
                 m.stmt('{} {}{}`'.format(go.goname(name), typename, self.resolve_tag(name)))
         return structname
 
