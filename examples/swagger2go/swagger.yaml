@@ -1,7 +1,7 @@
 definitions:
   bridge:
     type: object
-    x-nullable: true
+    x-go-pointer: true
     properties:
       name:
         type: string

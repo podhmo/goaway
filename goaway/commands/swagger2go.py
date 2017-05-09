@@ -14,6 +14,7 @@ support
 - primitive struct
 - primitive array
 - self recursion
+- enum
 """
 
 
@@ -50,7 +51,7 @@ class Walker:
             return self.walk_array(d, name=name)
         else:
             typ = self.resolve_type(d)
-            if self.isnullable(d):
+            if self.ispointer(d):
                 typ = typ.pointer
             return typ
 
@@ -66,7 +67,7 @@ class Walker:
             struct.define_field(
                 go.goname(name), typ, comment=prop.get("description"), tag=self.resolve_tag(name)
             )
-        if self.isnullable(d):
+        if self.ispointer(d):
             struct = struct.pointer
         return struct
 
@@ -74,7 +75,7 @@ class Walker:
         typ = self.walk(d["items"], name=name)
         name = go.goname(name)
         array = self.file.newtype(go.goname(name), type=typ.slice, comment=d.get("description"))
-        if self.isnullable(d):
+        if self.ispointer(d):
             array = array.pointer
         return array
 
@@ -83,15 +84,15 @@ class Walker:
             return self.defined[ref]
 
         d = access_by_json_pointer(self.doc, ref[1:])
-        self.nullable[ref] = self.isnullable(d)
+        self.nullable[ref] = self.ispointer(d)
         name = ref.rsplit("/", 1)[-1]
         sentinel = self.defined[ref] = _Sentinel()
         typ = self.walk(d, name=name)
         sentinel._configure(typ)
         return typ
 
-    def isnullable(self, d):
-        return d.get("x-nullable", False)
+    def ispointer(self, d):
+        return d.get("x-go-pointer", False)
 
 
 class _Sentinel:
