@@ -43,7 +43,11 @@ class Walker:
         return ' `json:"{name}" bson:"{name}"`'.format(name=name)
 
     def walk(self, d, name):
-        if "$ref" in d:
+        if "x-go-type" in d:
+            package_name, name = d["x-go-type"].rsplit(".", 1)
+            package = self.file.import_(package_name)
+            return getattr(package, name)
+        elif "$ref" in d:
             return self.walk_ref(d["$ref"])
         elif d["type"] == "object":
             return self.walk_object(d, name=name)

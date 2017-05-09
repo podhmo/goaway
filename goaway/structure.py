@@ -153,6 +153,8 @@ class File(Stringable):
     def import_(self, fullname, as_=None):
         if fullname in self.imported:
             return self.imported[fullname]
+        if self.package.fullname == fullname:
+            return self.package
         v = self.imported[fullname] = self.package.import_(fullname, name=as_)
         return v
 
