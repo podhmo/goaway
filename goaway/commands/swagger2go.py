@@ -64,6 +64,8 @@ class Walker:
         struct = self.file.struct(name, comment=d.get("description"))
         for name, prop in (d.get("properties") or {}).items():
             typ = self.walk(prop, name=name)
+            if getattr(typ, "fullname", "") == struct.fullname:
+                typ = typ.pointer
             struct.define_field(
                 go.goname(name), typ, comment=prop.get("description"), tag=self.resolve_tag(name)
             )
@@ -87,7 +89,7 @@ class Walker:
         self.nullable[ref] = self.ispointer(d)
         name = ref.rsplit("/", 1)[-1]
         sentinel = self.defined[ref] = _Sentinel()
-        typ = self.walk(d, name=name)
+        typ = self.defined[ref] = self.walk(d, name=name)
         sentinel._configure(typ)
         return typ
 
@@ -97,7 +99,7 @@ class Walker:
 
 class _Sentinel:
     def __init__(self):
-        self._value = None
+        self._value = object()
 
     def _configure(self, value):
         self._value = value

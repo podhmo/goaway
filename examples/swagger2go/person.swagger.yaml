@@ -1,12 +1,40 @@
 definitions:
-  Person:
+  memo:
+    type: object
+    properties:
+      name:
+        type: string
+  people:
+    type: array
+    items:
+      $ref: "#/definitions/person"
+  person:
     type: object
     properties:
       name:
         type: string
       age:
         type: integer
+      memo:
+        $ref: "#/definitions/memo"
       father:
-        $ref: "#/definitions/Person"
+        $ref: "#/definitions/person"
       mother:
-        $ref: "#/definitions/Person"
+        $ref: "#/definitions/person"
+  person2:
+    type: object
+    properties:
+      name:
+        type: string
+      age:
+        type: integer
+      memo:
+        $ref: "#/definitions/memo"
+      father:
+        $ref: "#/definitions/person2"
+      mother:
+        $ref: "#/definitions/person2"
+  people2:
+    type: array
+    items:
+      $ref: "#/definitions/person2"
