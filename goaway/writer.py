@@ -78,13 +78,13 @@ class StructWriter:
         if struct.comment is not None or struct.name[0].isupper():
             _writecomment(m, '// {} : '.format(struct.name), struct.comment or "")
         with m.type_(struct.name, "struct"):
-            for name, type, tag, comment, embeded in struct.fields.values():
+            for name, typ, tag, comment, embeded in struct.fields.values():
                 if comment is not None:
                     _writecomment(m, '// ', comment)
                 if embeded:
-                    m.append(type.typename(file))
+                    m.append(typ.typename(file))
                 else:
-                    m.append("{} {}".format(name, type.typename(file)))
+                    m.append("{} {}".format(name, typ.typename(file)))
                 if tag is not None:
                     m.append(" {}".format(tag))
                 m.stmt("")

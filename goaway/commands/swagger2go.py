@@ -1,15 +1,23 @@
+import logging
 import sys
+from magicalimport import import_symbol
 from dictknife import loading
-from prestring import go, PreString
+from goaway import get_repository
+from prestring import go
 from dictknife.jsonknife.accessor import access_by_json_pointer
-
 """
 - conflict check
 - required support
+- multiple ref
+
+support
+- primitive struct
+- primitive array
+- self recursion
 """
 
 
-class Emitter:
+class Walker:
     DEFAULT_MAPPING = {
         "boolean": "bool",
         "string": "string",
@@ -17,9 +25,10 @@ class Emitter:
         "integer": "int64",
     }
 
-    def __init__(self, doc, m=None, mapping=None):
+    def __init__(self, doc, file, repository, mapping=None):
         self.doc = doc
-        self.m = m or go.Module()
+        self.file = file
+        self.repository = repository
         self.defined = {}  # ref -> name, todo: conflict
         self.nullable = {}  # ref
         self.type_mapping = mapping or self.DEFAULT_MAPPING
@@ -27,85 +36,112 @@ class Emitter:
     def resolve_type(self, prop):
         # todo: implement
         typ = prop["type"]
-        return self.type_mapping[typ]
+        return getattr(self.file, self.type_mapping[typ])
 
     def resolve_tag(self, name):
-        return ' `json:"{name}" bson:"{name}"'.format(name=name)
+        return ' `json:"{name}" bson:"{name}"`'.format(name=name)
 
-    def emit(self, d, name):
+    def walk(self, d, name):
         if "$ref" in d:
-            return self.emit_ref(d["$ref"])
+            return self.walk_ref(d["$ref"])
         elif d["type"] == "object":
-            return self.emit_object(d, name=name)
+            return self.walk_object(d, name=name)
         elif d["type"] == "array":
-            return self.emit_array(d, name=name)
+            return self.walk_array(d, name=name)
         else:
-            typename = self.resolve_type(d)
-            if d.get("x-nullable", False):
-                typename = "*{}".format(typename)
-            return typename
+            typ = self.resolve_type(d)
+            if self.isnullable(d):
+                typ = typ.pointer
+            return typ
 
-    def emit_object(self, d, name):
-        m = self.m.submodule()
-        structname = go.goname(name)
-        m.comment("{} :{}".format(structname, d.get("description", "")))
-        with m.type_(structname, "struct"):
-            for name, prop in d["properties"].items():
-                if "description" in prop:
-                    m.comment("{} :{}".format(go.goname(name), prop.get("description", "")))
-                if "$ref" in prop:
-                    typename = self.emit_ref(prop["$ref"])
-                    if self.nullable[prop["$ref"]]:
-                        typename = "*{}".format(typename)
-                else:
-                    typename = self.emit(prop, name=name)
-                m.stmt('{} {}{}`'.format(go.goname(name), typename, self.resolve_tag(name)))
-        return structname
+    def walk_all(self):
+        for name, d in (self.doc.get("definitions") or {}).items():
+            self.walk(d, name)
 
-    def emit_array(self, d, name):
-        m = self.m.submodule()
-        arrname = go.goname(name)
-        item = d["items"]
-        if "$ref" in item:
-            typename = self.emit_ref(item["$ref"])
-        else:
-            typename = self.resolve_type(item)
-        m.comment("{} :{}".format(arrname, d.get("description", "")))
-        m.stmt("type {} []{}".format(arrname, typename))
-        m.sep()
-        return arrname
+    def walk_object(self, d, name):
+        name = go.goname(name)
+        struct = self.file.struct(name, comment=d.get("description"))
+        for name, prop in (d.get("properties") or {}).items():
+            typ = self.walk(prop, name=name)
+            struct.define_field(
+                go.goname(name), typ, comment=prop.get("description"), tag=self.resolve_tag(name)
+            )
+        if self.isnullable(d):
+            struct = struct.pointer
+        return struct
 
-    def emit_ref(self, ref):
+    def walk_array(self, d, name):
+        typ = self.walk(d["items"], name=name)
+        name = go.goname(name)
+        array = self.file.newtype(go.goname(name), type=typ.slice, comment=d.get("description"))
+        if self.isnullable(d):
+            array = array.pointer
+        return array
+
+    def walk_ref(self, ref):
         if ref in self.defined:
             return self.defined[ref]
 
         d = access_by_json_pointer(self.doc, ref[1:])
-        self.nullable[ref] = self.is_nullable(d)
+        self.nullable[ref] = self.isnullable(d)
         name = ref.rsplit("/", 1)[-1]
-        typename = self.defined[ref] = PreString("")
-        typename.append(self.emit(d, name=name))
-        return typename
+        sentinel = self.defined[ref] = _Sentinel()
+        typ = self.walk(d, name=name)
+        sentinel._configure(typ)
+        return typ
 
-    def is_nullable(self, d):
+    def isnullable(self, d):
         return d.get("x-nullable", False)
+
+
+class _Sentinel:
+    def __init__(self):
+        self._value = None
+
+    def _configure(self, value):
+        self._value = value
+
+    @property
+    def typename(self):
+        return self.pointer.typename
+
+    def __getattr__(self, name):
+        if self._value is None:
+            raise RuntimeError("not configured")
+        return getattr(self._value, name)
 
 
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("src", nargs="?", default=sys.stdin, type=argparse.FileType("r"))
+    parser.add_argument("src", nargs="?", default=None)
     parser.add_argument("--dst", default=sys.stdout, type=argparse.FileType("w"))
-    parser.add_argument("--ref", required=True)
+    parser.add_argument("--ref", default=None)
     parser.add_argument("--package", default=None)
+    parser.add_argument("--file", default="main.go")
+    parser.add_argument("--position", default=None)
+    parser.add_argument("--writer", default="goaway.writer:Writer")
+    parser.add_argument("--emitter", default="goaway.emitter:Emitter")
     args = parser.parse_args()
 
-    doc = loading.load(args.src)
-    m = go.Module()
-    if args.package:
-        m.package(args.package)
-    emitter = Emitter(doc, m=m)
-    emitter.emit_ref(args.ref)
-    print(m)
+    logging.basicConfig(level=logging.INFO)
+    loading.setup()
+
+    r = get_repository(
+        writer_cls=import_symbol(args.writer),
+        emitter_cls=import_symbol(args.emitter),
+    )
+
+    doc = loading.loadfile(args.src)
+    package = r.package(args.package or "main")
+    walker = Walker(doc, package.file(args.file), r)  # todo: separated output
+    if args.ref:
+        walker.walk_ref(args.ref)
+    else:
+        walker.walk_all()
+
+    d = r.resolve_package_path(args.position, package)
+    r.emitter.emit_package(package, d=d)
 
 
 if __name__ == "__main__":

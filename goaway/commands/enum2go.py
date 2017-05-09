@@ -44,11 +44,12 @@ def main():
     logging.basicConfig(level=logging.INFO)
     loading.setup()
 
-    data = loading.loadfile(args.src)
     r = get_repository(
         writer_cls=import_symbol(args.writer),
         emitter_cls=import_symbol(args.emitter),
     )
+
+    data = loading.loadfile(args.src)
     package = r.package(args.package or "main")
     walk(data, package, r)
 
