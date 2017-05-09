@@ -25,6 +25,9 @@ class FileWriter:
             for ipackage in file.imported.values():
                 im(ipackage.fullname, as_=ipackage.as_)
 
+        for newtype in file.newtypes.values():
+            self.writer.write_newtype(newtype, file, m=m)
+            m.sep()
         for enum in file.enums.values():
             self.writer.write_enum(enum, file, m=m)
             m.sep()
@@ -106,6 +109,17 @@ class InterfaceWriter:
                 if tag is not None:
                     m.append(" {}".format(tag))
                 m.stmt("")
+        return m
+
+
+class NewtypeWriter:
+    def __init__(self, writer):
+        self.writer = writer
+
+    def write(self, newtype, file, m):
+        if newtype.comment is not None or newtype.name[0].isupper():
+            _writecomment(m, '// {} : '.format(newtype.name), newtype.comment or "")
+        m.type_alias(newtype.name, newtype.type.typename(file))
         return m
 
 
@@ -194,6 +208,7 @@ class EnumWriter:
 class Writer:
     file_writer_factory = FileWriter
     enum_writer_factory = EnumWriter
+    newtype_writer_factory = NewtypeWriter
     struct_writer_factory = StructWriter
     interface_writer_factory = InterfaceWriter
     func_writer_factory = FuncWriter
@@ -203,6 +218,7 @@ class Writer:
         self.modules = defaultdict(module_factory)  # module is prestring's module
         self.file_writer = self.file_writer_factory(self)
         self.enum_writer = self.enum_writer_factory(self)
+        self.newtype_writer = self.newtype_writer_factory(self)
         self.struct_writer = self.struct_writer_factory(self)
         self.interface_writer = self.interface_writer_factory(self)
         self.func_writer = self.func_writer_factory(self)
@@ -216,6 +232,9 @@ class Writer:
 
     def write_enum(self, enum, file, m):
         return self.enum_writer.write(enum, file, m)
+
+    def write_newtype(self, newtype, file, m):
+        return self.newtype_writer.write(newtype, file, m)
 
     def write_struct(self, struct, file, m):
         return self.struct_writer.write(struct, file, m)

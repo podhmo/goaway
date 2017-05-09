@@ -130,6 +130,7 @@ class File(Stringable):
         self.imported = OrderedDict()
         self.functions = OrderedDict()
         self.enums = OrderedDict()
+        self.newtypes = OrderedDict()
         self.structs = OrderedDict()
         self.interfaces = OrderedDict()
 
@@ -160,6 +161,12 @@ class File(Stringable):
         enum = Enum(name, file=self, type=type, comment=comment)
         self.enums[name] = enum
         return enum
+
+    def newtype(self, name, type, comment=None):
+        name = goname(name)
+        newtype = Newtype(name, file=self, type=type, comment=comment)
+        self.newtypes[name] = newtype
+        return newtype
 
     def struct(self, name, comment=None):
         name = name
@@ -252,6 +259,27 @@ class Container:  # xxx
         if prefix:
             name = "{}.{}".format(prefix, name)
         return Symbol(name, self.package, virtual=True)
+
+
+class Newtype(Stringable, Typeable, Valueable):
+    def __init__(self, name, type, file, comment=None):
+        self.name = name
+        self.type = type
+        self.file = file
+        self.comment = comment
+
+    def tostring(self):
+        if self.package.virtual:
+            return self.name
+        return "{}.{}".format(self.package.name, self.name)
+
+    def varname(self, name):
+        return goname("{}{}".format(self.name, titlize(name)))
+
+    # typeable
+    @property
+    def package(self):
+        return self.file.package
 
 
 class Enum(Stringable, Typeable, Valueable, Container):
