@@ -55,7 +55,9 @@ class Walker:
             return self.walk_array(d, name=name)
         else:
             typ = self.resolve_type(d)
-            if self.ispointer(d):
+            if self.has_enum(d):
+                typ = self.walk_enum(d, typ, name=name)
+            if self.is_pointer(d):
                 typ = typ.pointer
             return typ
 
@@ -73,7 +75,7 @@ class Walker:
             struct.define_field(
                 go.goname(name), typ, comment=prop.get("description"), tag=self.resolve_tag(name)
             )
-        if self.ispointer(d):
+        if self.is_pointer(d):
             struct = struct.pointer
         return struct
 
@@ -81,7 +83,7 @@ class Walker:
         typ = self.walk(d["items"], name=name)
         name = go.goname(name)
         array = self.file.newtype(go.goname(name), type=typ.slice, comment=d.get("description"))
-        if self.ispointer(d):
+        if self.is_pointer(d):
             array = array.pointer
         return array
 
@@ -90,14 +92,24 @@ class Walker:
             return self.defined[ref]
 
         d = access_by_json_pointer(self.doc, ref[1:])
-        self.nullable[ref] = self.ispointer(d)
+        self.nullable[ref] = self.is_pointer(d)
         name = ref.rsplit("/", 1)[-1]
         sentinel = self.defined[ref] = _Sentinel()
         typ = self.defined[ref] = self.walk(d, name=name)
         sentinel._configure(typ)
         return typ
 
-    def ispointer(self, d):
+    def walk_enum(self, d, typ, name):
+        name = go.goname(name)
+        enum = self.file.enum(name, typ, comment=d.get("description"))
+        for x in d["enum"]:
+            enum.define_member(x, x)
+        return enum
+
+    def has_enum(self, d):
+        return d.get("enum")
+
+    def is_pointer(self, d):
         return d.get("x-go-pointer", False)
 
 

@@ -1,4 +1,11 @@
 definitions:
+  gender:
+    type: string
+    enum:
+      - notKnown
+      - male
+      - female
+      - notApplicable
   memo:
     x-go-type: "github/podhmo/swagger2go/person.Memo"
     type: object
@@ -22,6 +29,8 @@ definitions:
         type: string
       age:
         type: integer
+      gender:
+        $ref: "#/definitions/gender"
       memo:
         $ref: "#/definitions/memo"
       memo2:
@@ -30,22 +39,24 @@ definitions:
         $ref: "#/definitions/person"
       mother:
         $ref: "#/definitions/person"
-  person2:
-    type: object
-    properties:
-      name:
-        type: string
-      age:
-        type: integer
-      memo:
-        $ref: "#/definitions/memo"
-      memo2:
-        $ref: "#/definitions/memo2"
-      father:
-        $ref: "#/definitions/person2"
-      mother:
-        $ref: "#/definitions/person2"
-  people2:
-    type: array
-    items:
-      $ref: "#/definitions/person2"
+  # person2:
+  #   type: object
+  #   properties:
+  #     name:
+  #       type: string
+  #     age:
+  #       type: integer
+  #     gender:
+  #       $ref: "#/definitions/gender"
+  #     memo:
+  #       $ref: "#/definitions/memo"
+  #     memo2:
+  #       $ref: "#/definitions/memo2"
+  #     father:
+  #       $ref: "#/definitions/person2"
+  #     mother:
+  #       $ref: "#/definitions/person2"
+  # people2:
+  #   type: array
+  #   items:
+  #     $ref: "#/definitions/person2"
