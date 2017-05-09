@@ -17,6 +17,10 @@ support
 - enum
 """
 
+MARKER_FILENAME = "x-go-filename"
+MARKER_TYPE = "x-go-type"
+MARKER_IS_POINTER = "x-go-pointer"
+
 
 class Walker:
     DEFAULT_MAPPING = {
@@ -34,6 +38,12 @@ class Walker:
         self.nullable = {}  # ref
         self.type_mapping = mapping or self.DEFAULT_MAPPING
 
+    def resolve_file(self, prop):
+        if MARKER_FILENAME in prop:
+            return self.file.package.file(prop[MARKER_FILENAME])
+        else:
+            return self.file
+
     def resolve_type(self, prop):
         # todo: implement
         typ = prop["type"]
@@ -43,9 +53,9 @@ class Walker:
         return ' `json:"{name}" bson:"{name}"`'.format(name=name)
 
     def walk(self, d, name):
-        if "x-go-type" in d:
-            package_name, name = d["x-go-type"].rsplit(".", 1)
-            package = self.file.import_(package_name)
+        if MARKER_TYPE in d:
+            package_name, name = d[MARKER_TYPE].rsplit(".", 1)
+            package = self.resolve_file(d).import_(package_name)
             return getattr(package, name)
         elif "$ref" in d:
             return self.walk_ref(d["$ref"])
@@ -67,7 +77,7 @@ class Walker:
 
     def walk_object(self, d, name):
         name = go.goname(name)
-        struct = self.file.struct(name, comment=d.get("description"))
+        struct = self.resolve_file(d).struct(name, comment=d.get("description"))
         for name, prop in (d.get("properties") or {}).items():
             typ = self.walk(prop, name=name)
             if getattr(typ, "fullname", "") == struct.fullname:
@@ -82,7 +92,7 @@ class Walker:
     def walk_array(self, d, name):
         typ = self.walk(d["items"], name=name)
         name = go.goname(name)
-        array = self.file.newtype(go.goname(name), type=typ.slice, comment=d.get("description"))
+        array = self.resolve_file(d).newtype(go.goname(name), type=typ.slice, comment=d.get("description"))
         if self.is_pointer(d):
             array = array.pointer
         return array
@@ -101,7 +111,7 @@ class Walker:
 
     def walk_enum(self, d, typ, name):
         name = go.goname(name)
-        enum = self.file.enum(name, typ, comment=d.get("description"))
+        enum = self.resolve_file(d).enum(name, typ, comment=d.get("description"))
         for x in d["enum"]:
             enum.define_member(x, x)
         return enum
@@ -110,7 +120,7 @@ class Walker:
         return d.get("enum")
 
     def is_pointer(self, d):
-        return d.get("x-go-pointer", False)
+        return d.get(MARKER_IS_POINTER, False)
 
 
 class _Sentinel:
@@ -139,6 +149,7 @@ def main():
     parser.add_argument("--package", default=None)
     parser.add_argument("--file", default="main.go")
     parser.add_argument("--position", default=None)
+    parser.add_argument("--walker", default="goaway.commands.swagger2go:Walker")
     parser.add_argument("--writer", default="goaway.writer:Writer")
     parser.add_argument("--emitter", default="goaway.emitter:Emitter")
     args = parser.parse_args()
@@ -153,7 +164,8 @@ def main():
 
     doc = loading.loadfile(args.src)
     package = r.package(args.package or "main")
-    walker = Walker(doc, package.file(args.file), r)  # todo: separated output
+    walker_cls = import_symbol(args.walker)
+    walker = walker_cls(doc, package.file(args.file), r)
     if args.ref:
         walker.walk_ref(args.ref)
     else:

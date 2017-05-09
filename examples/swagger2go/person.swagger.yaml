@@ -1,5 +1,6 @@
 definitions:
   gender:
+    x-go-filename: "gender.go"
     type: string
     enum:
       - notKnown
