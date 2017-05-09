@@ -50,7 +50,7 @@ class Walker:
         return getattr(self.file, self.type_mapping[typ])
 
     def resolve_tag(self, name):
-        return ' `json:"{name}" bson:"{name}"`'.format(name=name)
+        return ' `json:"{name}"`'.format(name=name)
 
     def walk(self, d, name):
         if MARKER_TYPE in d:
@@ -92,7 +92,9 @@ class Walker:
     def walk_array(self, d, name):
         typ = self.walk(d["items"], name=name)
         name = go.goname(name)
-        array = self.resolve_file(d).newtype(go.goname(name), type=typ.slice, comment=d.get("description"))
+        array = self.resolve_file(d).newtype(
+            go.goname(name), type=typ.slice, comment=d.get("description")
+        )
         if self.is_pointer(d):
             array = array.pointer
         return array
