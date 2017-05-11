@@ -79,7 +79,7 @@ class StructWriter:
             _writecomment(m, '// {} : '.format(struct.name), struct.comment or "")
         with m.type_(struct.name, "struct"):
             for name, typ, tag, comment, embeded in struct.fields.values():
-                if comment is not None:
+                if comment is not None and "\n" in comment:
                     _writecomment(m, '// ', comment)
                 if embeded:
                     m.append(typ.typename(file))
@@ -87,6 +87,8 @@ class StructWriter:
                     m.append("{} {}".format(name, typ.typename(file)))
                 if tag is not None:
                     m.append(" {}".format(tag))
+                if comment is not None and "\n" not in comment:
+                    m.append("  // {}".format(comment))
                 m.stmt("")
         return m
 
@@ -100,7 +102,7 @@ class InterfaceWriter:
             _writecomment(m, '// {} : '.format(interface.name), interface.comment or "")
         with m.type_(interface.name, "interface"):
             for name, f, tag, comment, embeded in interface.methods.values():
-                if comment is not None:
+                if comment is not None and "\n" in comment:
                     _writecomment(m, '// ', comment)
                 if embeded:
                     m.append(f.typename(file))
@@ -108,6 +110,8 @@ class InterfaceWriter:
                     m.append(f.withtype(file, prefix=""))
                 if tag is not None:
                     m.append(" {}".format(tag))
+                if comment is not None and "\n" not in comment:
+                    m.append("  // {}".format(comment))
                 m.stmt("")
         return m
 
