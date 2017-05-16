@@ -49,7 +49,7 @@ class FuncWriter:
         self.writer = writer
 
     def write(self, f, file, m):
-        if f.comment is not None or f.name[0].isupper():
+        if f.comment is not None or (f.name and f.name[0].isupper()):
             m.stmt('// {} : {}'.format(f.name, f.comment or ""))
         m.append(str(f))
         m.stmt(" {")
@@ -75,7 +75,7 @@ class StructWriter:
         self.writer = writer
 
     def write(self, struct, file, m):
-        if struct.comment is not None or struct.name[0].isupper():
+        if struct.comment is not None or (struct.name and struct.name[0].isupper()):
             _writecomment(m, '// {} : '.format(struct.name), struct.comment or "")
         with m.type_(struct.name, "struct"):
             for name, typ, tag, comment, embeded in struct.fields.values():
@@ -98,7 +98,7 @@ class InterfaceWriter:
         self.writer = writer
 
     def write(self, interface, file, m):
-        if interface.comment is not None or interface.name[0].isupper():
+        if interface.comment is not None or (interface.name and interface.name[0].isupper()):
             _writecomment(m, '// {} : '.format(interface.name), interface.comment or "")
         with m.type_(interface.name, "interface"):
             for name, f, tag, comment, embeded in interface.methods.values():
@@ -121,7 +121,7 @@ class NewtypeWriter:
         self.writer = writer
 
     def write(self, newtype, file, m):
-        if newtype.comment is not None or newtype.name[0].isupper():
+        if newtype.comment is not None or (newtype.name and newtype.name[0].isupper()):
             _writecomment(m, '// {} : '.format(newtype.name), newtype.comment or "")
         m.type_alias(newtype.name, newtype.type.typename(file))
         return m
