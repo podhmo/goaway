@@ -37,6 +37,9 @@ class FileWriter:
         for struct in file.structs.values():
             self.writer.write_struct(struct, file, m=m)
             m.sep()
+        for fn in file.globals:
+            fn(m)
+            m.sep()
         for f in file.functions.values():
             self.writer.write_function(f, file, m=m)
             m.sep()

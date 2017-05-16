@@ -133,6 +133,7 @@ class File(Stringable):
         self.newtypes = OrderedDict()
         self.structs = OrderedDict()
         self.interfaces = OrderedDict()
+        self.globals = []
 
     def tostring(self):
         return self.fullname
