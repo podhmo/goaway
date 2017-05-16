@@ -2,7 +2,7 @@ import logging
 import sys
 from magicalimport import import_symbol
 from dictknife import loading
-from goaway import get_repository
+from goaway import get_repository, tag
 from prestring import go
 from dictknife.jsonknife.accessor import access_by_json_pointer
 """
@@ -50,7 +50,7 @@ class Walker:
         return getattr(self.file, self.type_mapping[typ])
 
     def resolve_tag(self, name):
-        return ' `json:"{name}"`'.format(name=name)
+        return tag(json=name)
 
     def walk(self, d, name):
         if MARKER_TYPE in d:
