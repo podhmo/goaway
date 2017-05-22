@@ -145,7 +145,8 @@ class EnumWriter:
         return m
 
     def write_definition(self, enum, file, m):
-        m.stmt('// {} : {}'.format(enum.name, enum.comment or ""))
+        if enum.comment is not None or (enum.name and enum.name[0].isupper()):
+            m.stmt('// {} : {}'.format(enum.name, enum.comment or ""))
         m.stmt("type {} {}".format(enum.name, enum.type.typename(file)))
         m.sep()
 
