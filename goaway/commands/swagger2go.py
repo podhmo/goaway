@@ -146,6 +146,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("src", nargs="?", default=None)
+    parser.add_argument("--format", choices=loading.get_formats(), default=None)
     parser.add_argument("--dst", default=sys.stdout, type=argparse.FileType("w"))
     parser.add_argument("--ref", default=None)
     parser.add_argument("--package", default=None)
