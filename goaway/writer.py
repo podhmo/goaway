@@ -43,7 +43,7 @@ class FileWriter:
         for f in file.functions.values():
             self.writer.write_function(f, file, m=m)
             m.sep()
-        im.clear_ifempty()
+        # im.clear_ifempty()
         return m
 
 
