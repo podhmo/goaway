@@ -3,7 +3,7 @@ from collections import defaultdict
 from prestring.go import (
     GoModule,
     goname,
-    titlize,
+    titleize,
 )
 from .langhelpers import tostring
 
@@ -188,7 +188,7 @@ class EnumWriter:
         fmt = m.import_("fmt")
 
         @file.func(
-            goname("Parse" + titlize(enum.name)),
+            goname("Parse" + titleize(enum.name)),
             args=enum.type(enum.shortname),
             returns=enum,
             comment="parse",

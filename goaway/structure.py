@@ -3,7 +3,7 @@ from collections import OrderedDict
 from prestring import LazyFormat
 from prestring.go import (
     goname,
-    titlize,
+    titleize
 )
 from .langhelpers import (
     reify,
@@ -277,7 +277,7 @@ class Newtype(Stringable, Typeable, Valueable):
         return "{}.{}".format(self.package.name, self.name)
 
     def varname(self, name):
-        return goname("{}{}".format(self.name, titlize(name)))
+        return goname("{}{}".format(self.name, titleize(name)))
 
     # typeable
     @property
@@ -316,7 +316,7 @@ class Enum(Stringable, Typeable, Valueable, Container):
         return member
 
     def varname(self, name):
-        return goname("{}{}".format(self.name, titlize(name)))
+        return goname("{}{}".format(self.name, titleize(name)))
 
     # container
     @property
@@ -368,7 +368,7 @@ class Struct(Stringable, Typeable, Valueable, Container):
         return field
 
     def varname(self, name):
-        return goname("{}{}".format(self.name, titlize(name)))
+        return goname("{}{}".format(self.name, titleize(name)))
 
     # container
     @property
@@ -421,7 +421,7 @@ class Interface(Stringable, Typeable, Valueable, Container):
         return method
 
     def varname(self, name):
-        return goname("{}{}".format(self.name, titlize(name)))
+        return goname("{}{}".format(self.name, titleize(name)))
 
     # container
     @property
