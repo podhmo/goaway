@@ -89,13 +89,11 @@ class WriterTests(unittest.TestCase):
             // sorted by the routines in this package. The methods require that the
             // elements of the collection be enumerated by an integer index.
             type Interface interface {
-            	// Len is the number of elements in the collection.
-            	Len() int
+            	Len() int  // Len is the number of elements in the collection.
             	// Less reports whether the element with
             	// index i should sort before the element with index j.
             	Less(i int, j int) bool
-            	// Swap swaps the elements with indexes i and j.
-            	Swap(i int, j int)
+            	Swap(i int, j int)  // Swap swaps the elements with indexes i and j.
             }
             """
         )
